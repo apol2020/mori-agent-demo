@@ -30,7 +30,7 @@ def get_agent_system_prompt(user_analysis: Optional[Dict[str, Any]] = None) -> S
         tools_text = "\n".join([f"- {tool['name']}: {tool['description']}" for tool in tool_descriptions])
     else:
         tools_text = "（現在利用可能なツールはありません）"
-    
+
     # ユーザー分析に基づくパーソナライゼーション情報
     personalization_text = ""
     if user_analysis and user_analysis.get("analysis_summary"):
