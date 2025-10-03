@@ -1,0 +1,63 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(make test:*)",
+      "Bash(git add:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(pip install:*)",
+      "Bash(make:*)",
+      "Bash(tree:*)",
+      "Bash(pkill:*)",
+      "Bash(PYTHONPATH=. streamlit run src/app.py)",
+      "Bash(PYTHONPATH=. python -c \"from src.infrastructure.external.langchain_agent import LangChainAgent; print(''Import OK'')\")",
+      "Bash(git rm:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nRefactor architecture to simplify codebase and improve tool management\n\n- Remove Use Case layer to simplify architecture from 4 layers to 3\n- Create tool abstraction with base class and registry pattern\n- Implement GetCurrentTimeTool and MultiplyTool as reusable components\n- Extract output normalization logic into OutputHandler class\n- Update LangChainAgent to use tool instances with @tool decorator\n- Update UI to call AgentService directly instead of UseCase\n- Add comprehensive unit tests for tools and registry (12 tests passing)\n- Reduce code duplication by 66 lines in langchain_agent.py\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "mcp__ide__getDiagnostics",
+      "Bash(git commit -m \"$(cat <<''EOF''\n開発環境の設定を更新し、型チェックとコード品質ツールの設定を調整\n\n- mypyの型チェック設定を緩和し、実用的な開発環境に最適化\n- Black、isort、Ruffの行長を120文字に統一\n- pre-commitフックの設定を更新（Ruffに--unsafe-fixes追加）\n- VS Codeの型チェックモードをbasicに変更\n- Claude Code設定にmcp__ide__getDiagnosticsを追加\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git log:*)",
+      "Bash(pre-commit:*)",
+      "Bash(cat:*)",
+      "WebFetch(domain:python.langchain.com)",
+      "WebFetch(domain:blog.langchain.com)",
+      "Bash(PYTHONPATH=. python -c \"from src.core.services.agent_service import AgentService; print(''Import OK'')\")",
+      "Bash(curl:*)",
+      "Bash(tokei:*)",
+      "Bash(cloc:*)",
+      "Bash(PYTHONPATH=. mypy src/infrastructure/external/langchain_agent.py --no-error-summary)",
+      "Bash(PYTHONPATH=. python -m mypy src/core/services/agent_service.py --no-error-summary)",
+      "Bash(PYTHONPATH=. pytest tests/unit/ -v -m unit --no-cov)",
+      "Bash(PYTHONPATH=. pytest tests/unit/core/tools/ -v --no-cov)",
+      "Bash(PYTHONPATH=. pytest tests/unit/core/services/ -v --no-cov)",
+      "Bash(PYTHONPATH=. pytest tests/unit/utils/test_logger.py -v --no-cov)",
+      "Bash(PYTHONPATH=. streamlit run src/app.py --server.headless=true --server.port=8501)",
+      "Bash(PYTHONPATH=. python -c \"from src.core.services.agent_service import AgentService; print(''AgentService Import OK'')\")",
+      "Bash(mypy:*)",
+      "Bash(git commit:*)",
+      "Bash(PYTHONPATH=. pytest tests/unit/ -v --no-cov)",
+      "Bash(PYTHONPATH=. mypy src/ --no-error-summary)",
+      "Bash(PYTHONPATH=. python -c \"from src.core.models.agent_model import MessageRole, ChatMessage; from src.core.tools.base import BaseTool; from src.ui.layouts.base import setup_page_config; from src.ui.components.chat_interface import render_chat_message; print(''All imports OK'')\")",
+      "WebFetch(domain:langchain-ai.github.io)",
+      "Bash(export PYTHONPATH=.)",
+      "Bash(streamlit run:*)",
+      "Bash(PYTHONPATH=. python -c \"from src.infrastructure.llm.langchain_adapter import LangGraphAdapter; print(''LangGraphAdapter import OK'')\")",
+      "Bash(PYTHONPATH=. python -c \"from src.infrastructure.llm.langchain_adapter import AnthropicLangGraphAdapter; print(''Import OK'')\")",
+      "Bash(pytest:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read file; case \"$file\" in *.py) make -s format-one-generic format-one-python FILE=\"$file\" ;; *.yaml|*.yml) make -s format-one-generic format-one-yaml FILE=\"$file\" ;; *.toml) make -s format-one-generic format-one-toml FILE=\"$file\" ;; *) make -s format-one-generic FILE=\"$file\" ;; esac; }"
+          }
+        ]
+      }
+    ]
+  }
+}

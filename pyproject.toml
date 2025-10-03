@@ -1,0 +1,143 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mori-agent-demo"
+version = "0.1.0"
+description = "Streamlit application with clean architecture"
+authors = [{name = "Your Name", email = "your.email@example.com"}]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "streamlit>=1.28.0",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "langchain>=0.3.0",
+    "langchain-anthropic>=0.3.0",
+    "langchain-openai>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langchain-community>=0.3.0",
+    "langgraph>=0.2.0",
+    "anthropic>=0.39.0",
+    "pytz>=2023.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+    "ruff>=0.8.0",
+    "black>=23.7.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.3.0",
+    "jupyterlab>=4.0.0",
+]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+extend-exclude = [
+    ".git",
+    "__pycache__",
+    "dist",
+    "build",
+    ".venv",
+    ".mypy_cache",
+    ".pytest_cache",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "S",   # flake8-bandit
+    "T20", # flake8-print
+]
+ignore = [
+    "S101",  # Use of assert detected (allow in tests)
+    "T201",  # print found (allow for debugging)
+]
+
+# Enable auto-fixing for all rules
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]  # Allow assert in tests
+"src/app.py" = ["F841"]  # Allow unused variables in demo code
+"src/ui/components/sidebar.py" = ["F841"]  # Allow dark_mode placeholder
+
+[tool.black]
+line-length = 120
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.9"
+
+# Warnings
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+warn_no_return = true
+warn_unreachable = true
+warn_return_any = false
+
+# Type checking (relaxed for practical development)
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+
+# Other
+no_implicit_optional = true
+strict_equality = true
+
+# Ignore missing imports for all third-party libraries
+# This avoids needing to install stubs or manage dependencies in pre-commit
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-fail-under=15",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "ui: UI tests",
+    "asyncio: Asyncio tests",
+]
+asyncio_mode = "auto"

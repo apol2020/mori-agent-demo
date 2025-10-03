@@ -1,0 +1,375 @@
+Metadata-Version: 2.4
+Name: mori-agent-demo
+Version: 0.1.0
+Summary: Streamlit application with clean architecture
+Author-email: Your Name <your.email@example.com>
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: streamlit>=1.28.0
+Requires-Dist: requests>=2.31.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: pydantic-settings>=2.0.0
+Requires-Dist: langchain>=0.3.0
+Requires-Dist: langchain-anthropic>=0.3.0
+Requires-Dist: langchain-openai>=0.3.0
+Requires-Dist: langchain-core>=0.3.0
+Requires-Dist: langchain-community>=0.3.0
+Requires-Dist: langgraph>=0.2.0
+Requires-Dist: anthropic>=0.39.0
+Requires-Dist: pytz>=2023.3
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: pytest-mock>=3.11.0; extra == "dev"
+Requires-Dist: ruff>=0.8.0; extra == "dev"
+Requires-Dist: black>=23.7.0; extra == "dev"
+Requires-Dist: mypy>=1.5.0; extra == "dev"
+Requires-Dist: pre-commit>=3.3.0; extra == "dev"
+Requires-Dist: jupyterlab>=4.0.0; extra == "dev"
+
+# Mori Agent Demo
+
+UI、ビジネスロジック、インフラストラクチャレイヤー間の関心の分離を示す、クリーンアーキテクチャ原則で構築されたStreamlitアプリケーションです。
+
+## 🏗️ アーキテクチャ概要
+
+このプロジェクトは、明確な関心の分離を持つクリーンアーキテクチャ原則に従っています：
+
+```
+src/
+├── ui/                     # UIレイヤー（Streamlit固有のコード）
+│   ├── pages/              # Streamlitページ
+│   ├── components/         # 再利用可能なUIコンポーネント
+│   ├── layouts/            # レイアウトテンプレート
+│   └── config/             # UI設定（ツール表示設定など）
+├── core/                   # コアビジネスロジックレイヤー
+│   ├── agents/             # エージェント抽象化（ChatAgent、BaseAgent）
+│   ├── services/           # ビジネスサービス
+│   ├── models/             # データモデルとエンティティ
+│   ├── tools/              # ツール抽象化とレジストリ
+│   └── common/             # 共通モジュール（OutputNormalizer）
+├── infrastructure/         # インフラストラクチャレイヤー
+│   └── llm/                # LLM統合（Anthropic、OpenAI、LangChain）
+├── config/                 # 設定
+│   ├── settings.py         # アプリケーション設定
+│   └── prompts.py          # プロンプトテンプレート
+└── utils/                  # 共有ユーティリティ
+```
+
+### 代表的なファイル
+
+- **`src/app.py`**: Streamlitアプリケーションのエントリーポイント
+- **`src/core/agents/chat_agent.py`**: エージェントビジネスロジック実装
+- **`src/infrastructure/llm/llm_factory.py`**: マルチLLMファクトリー（Claude/OpenAI）
+- **`src/infrastructure/llm/langchain_adapter.py`**: LangGraph統合アダプター
+- **`src/ui/pages/agent_chat.py`**: エージェントチャットUIページ
+
+### レイヤーの依存関係
+
+```
+UIレイヤー → コアレイヤー → インフラストラクチャレイヤー
+```
+
+- **UIレイヤー**: Streamlitページ、コンポーネント、レイアウトを含む
+- **コアレイヤー**: UIフレームワークに依存しないビジネスロジックを含む
+- **インフラストラクチャレイヤー**: 外部統合とデータ永続化を含む
+
+## 🚀 クイックスタート
+
+### 前提条件
+
+- Docker Desktop（VS Code Dev Containersを使用する場合）
+- または Python 3.9以上 + pip（Pythonパッケージマネージャー）
+
+### インストール
+
+#### 推奨: Dev Containerを使用した開発
+
+1. **リポジトリのクローン**
+   ```bash
+   git clone <repository-url>
+   cd mori-agent-demo
+   ```
+
+2. **Dev Containerでプロジェクトを開く**
+   - VS Codeで開く
+   - コマンドパレット（`Cmd/Ctrl + Shift + P`）から「Dev Containers: Reopen in Container」を選択
+   - コンテナのビルドと起動を待つ
+
+3. **開発環境のセットアップ**
+   ```bash
+   make setup
+   ```
+
+4. **環境設定の作成**
+   ```bash
+   cp .env.example .env
+   # .envファイルを編集して、APIキーなどの固有の設定を行います
+   ```
+
+5. **アプリケーションの実行**
+   ```bash
+   make run
+   ```
+
+#### ローカル環境での開発（Dev Container未使用）
+
+1. **リポジトリのクローン**
+   ```bash
+   git clone <repository-url>
+   cd mori-agent-demo
+   ```
+
+2. **開発環境のセットアップ**
+   ```bash
+   make setup
+   ```
+
+3. **環境設定の作成**
+   ```bash
+   cp .env.example .env
+   # .envファイルを編集して、APIキーなどの固有の設定を行います
+   ```
+
+4. **アプリケーションの実行**
+   ```bash
+   make run
+   ```
+
+アプリケーションは `http://localhost:8501` で利用可能になります
+
+## 🛠️ 開発
+
+### 利用可能なコマンド
+
+```bash
+# 環境セットアップ
+make setup           # 開発環境のセットアップ
+make install         # 本番環境の依存関係をインストール
+make install-dev     # 開発環境の依存関係をインストール
+
+# アプリケーションの実行
+make run             # Streamlitアプリケーションの実行
+make dev-server      # 自動リロード付きで実行
+
+# テスト
+make test            # すべてのテストを実行
+make test-unit       # ユニットテストのみを実行
+make test-integration # 統合テストのみを実行
+make test-ui         # UIテストのみを実行
+
+# コード品質
+make lint            # リンティングを実行（Ruff）
+make format          # コードをフォーマット（Black + isort）
+make type-check      # 型チェックを実行（mypy）
+make check-all       # すべての品質チェックを実行
+
+# ユーティリティ
+make clean           # キャッシュと一時ファイルをクリーンアップ
+```
+
+### コード品質ツール
+
+このプロジェクトは、コード品質を維持するためにいくつかのツールを使用しています：
+
+- **Ruff**: 高速なPythonリンターとコードフォーマッター
+- **Black**: 一貫したスタイリングのためのコードフォーマッター（行長120文字）
+- **isort**: import文の整理ツール
+- **mypy**: 静的型チェッカー（実用的な設定で緩和されたチェック）
+- **pytest**: テストフレームワーク（pytest-asyncio、pytest-covを含む）
+- **pre-commit**: コミット前の自動品質チェック
+
+これらのツールの設定は `pyproject.toml` にあります。
+
+### 開発ワークフロー
+
+1. **新しいfeatureブランチの作成**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **変更の実施**
+   - 既存のコード構造に従う
+   - 新しい機能のテストを追加
+   - 型アノテーションがあることを確認
+
+3. **品質チェックの実行**
+   ```bash
+   make check-all
+   ```
+
+4. **変更のコミット**
+   ```bash
+   git add .
+   git commit -m "Add your feature description"
+   ```
+
+## 📁 プロジェクト構造
+
+### コアコンポーネント
+
+- **Agents** (`src/core/agents/`): エージェント抽象化レイヤー
+  - **BaseAgent**: すべてのエージェントの基底クラス
+  - **ChatAgent**: ビジネスロジックを含むチャットエージェント実装
+- **Models** (`src/core/models/`): データ構造とビジネスエンティティ（ChatMessage、MessageRoleなど）
+- **Services** (`src/core/services/`): ビジネスロジックと操作を実装
+- **Tools** (`src/core/tools/`): ツール抽象化とレジストリパターン
+  - **BaseTool**: すべてのツールの基底クラス
+  - **ToolRegistry**: ツールの登録と管理
+  - 具体的なツール実装（時刻取得、計算など）
+- **Common** (`src/core/common/`): 共通モジュール
+  - **OutputNormalizer**: 出力の正規化とフォーマット処理
+
+### インフラストラクチャコンポーネント
+
+- **LLM** (`src/infrastructure/llm/`): LLM統合レイヤー
+  - **LLMFactory**: マルチLLMサポート（Claude Sonnet 4.5、GPT-5、GPT-5 mini）
+  - **AnthropicClient**: Claude APIクライアント（直接統合用）
+  - **LangChainAdapter**: LangGraph統合アダプター（ReActエージェント）
+
+### UIコンポーネント
+
+- **Pages** (`src/ui/pages/`): メインアプリケーションページ（agent_chat.py）
+- **Components** (`src/ui/components/`): 再利用可能なUI要素（chat_interface.py、sidebar.py）
+- **Layouts** (`src/ui/layouts/`): ページレイアウトとテンプレート（base.py）
+- **Config** (`src/ui/config/`): UI設定（tool_display_config.py - ツール表示設定）
+
+### 設定とユーティリティ
+
+- **Settings** (`src/config/settings.py`): 環境ベースの設定
+- **Prompts** (`src/config/prompts.py`): システムプロンプトテンプレート
+- **Utils** (`src/utils/`): 共有ユーティリティ（logger.py）
+
+## 🧪 テスト
+
+プロジェクトには包括的なテストが含まれています：
+
+```bash
+# すべてのテストを実行
+make test
+
+# 特定のテストカテゴリーを実行
+make test-unit        # ユニットテスト（ビジネスロジック）
+make test-integration # 統合テスト（LangChain統合、ツールストリーミング）
+make test-ui          # UIコンポーネントテスト
+
+# カバレッジ付きで実行
+pytest --cov=src --cov-report=html
+```
+
+### テスト構造
+
+- **Unit Tests** (`tests/unit/`): ビジネスロジックの単体テスト
+  - エージェント、サービス、ツール、モデルのテスト
+- **Integration Tests** (`tests/integration/`): レイヤー間の統合テスト
+  - LangChainAdapter統合テスト
+  - ツール入力ストリーミングテスト
+- **UI Tests** (`tests/ui/`): UIコンポーネントテスト
+
+## 🔧 設定
+
+### 環境変数
+
+`.env.example` を `.env` にコピーして設定します：
+
+```bash
+# アプリケーション設定
+APP_NAME=Mori Agent Demo
+APP_VERSION=0.1.0
+DEBUG=false
+
+# LLMプロバイダーAPIキー（必須）
+ANTHROPIC_API_KEY=your_anthropic_api_key_here  # Claude用
+OPENAI_API_KEY=your_openai_api_key_here        # GPT-5用
+
+# Anthropic設定
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
+ANTHROPIC_TEMPERATURE=0
+ANTHROPIC_MAX_TOKENS=4096
+
+# Streamlit設定
+PAGE_TITLE=Mori Agent Demo
+PAGE_ICON=🤖
+LAYOUT=wide
+INITIAL_SIDEBAR_STATE=expanded
+
+# ログ設定
+LOG_LEVEL=INFO
+LOG_FORMAT=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+```
+
+### Streamlit設定
+
+Streamlit固有の設定は `.streamlit/config.toml` にあります：
+
+- サーバー設定（ポート、アドレス）
+- テーマ設定
+- パフォーマンス設定
+
+## 🚀 デプロイ
+
+### ローカル開発
+
+```bash
+make run
+```
+
+### 本番環境へのデプロイ
+
+1. **アプリケーションのビルド**
+   ```bash
+   make install
+   ```
+
+2. **本番環境の環境変数を設定**
+   ```bash
+   export DEBUG=false
+   export APP_ENV=production
+   ```
+
+3. **本番環境設定で実行**
+   ```bash
+   PYTHONPATH=. streamlit run src/app.py --server.port=8501
+   ```
+
+
+## ✨ 主な機能
+
+### マルチLLMサポート
+
+このアプリケーションは複数のLLMプロバイダーに対応しています：
+
+- **Claude Sonnet 4.5** (Anthropic)
+- **GPT-5** (OpenAI)
+- **GPT-5 mini** (OpenAI)
+
+サイドバーからモデルを選択でき、統一されたインターフェースで利用可能です。
+
+### ツール統合
+
+エージェントは以下のツールを使用できます：
+
+- **時刻取得ツール** (`GetCurrentTimeTool`): 指定されたタイムゾーンの現在時刻を取得
+- **計算ツール** (`MultiplyTool`): 2つの数値の乗算を実行
+
+ツールはレジストリパターンで管理され、簡単に追加・拡張が可能です。
+
+### ストリーミング応答
+
+エージェントの応答はトークン単位でストリーミングされ、ツールの実行状況もリアルタイムで表示されます。
+
+- **ツール入力のストリーミング表示**: Claude/OpenAI両方に対応
+- **ツール実行結果の表示**: カスタマイズ可能な表示形式
+- **応答の正規化**: 一貫したフォーマットで出力
+
+## コードスタイルガイドライン
+
+- Blackフォーマットを使用したPEP 8に従う（行長120文字）
+- すべての関数とメソッドに型ヒントを使用
+- 公開関数とクラスにdocstringを記述
+- 関数を小さく、焦点を絞ったものに保つ
+- UIロジックとビジネスロジックを分離
+
+---

@@ -1,0 +1,45 @@
+{
+  "name": "py-claude-devcontainer",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
+  "remoteUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "ms-python.vscode-pylance",
+        "anthropic.claude-code",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/python/current/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "jupyter.askForKernelRestart": false
+      }
+    }
+  },
+  "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+  "portsAttributes": {
+    "8501": {
+      "label": "app",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb"
+  }
+}
