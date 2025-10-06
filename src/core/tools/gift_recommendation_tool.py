@@ -159,6 +159,22 @@ class GiftRecommendationTool(BaseTool):
         else:
             return "一般"
 
+    def _load_narrative_data(self) -> Optional[Dict[str, Any]]:
+        """ナラティブデータを読み込む。"""
+        try:
+            from pathlib import Path
+            import json
+
+            project_root = Path(__file__).parent.parent.parent.parent
+            narrative_file = project_root / "input" / "narrative_data.json"
+
+            if narrative_file.exists():
+                with open(narrative_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception as e:
+            return None
+        return None
+
     def execute(self, query: str, user_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """ギフト提案を実行する。
 
@@ -170,6 +186,8 @@ class GiftRecommendationTool(BaseTool):
             ギフト提案結果を含む辞書
         """
         try:
+            # ナラティブデータを取得
+            narrative_data = self._load_narrative_data()
             # 予算を抽出
             budget = self._extract_budget(query)
             if not budget:
@@ -205,8 +223,28 @@ class GiftRecommendationTool(BaseTool):
                                 "occasion": occasion
                             })
 
-            # ユーザー分析結果を活用
+            # ナラティブデータとユーザー分析結果を活用
             personalized_notes = []
+
+            # ナラティブデータに基づく提案
+            if narrative_data:
+                age = narrative_data.get("age")
+                gender = narrative_data.get("gender")
+
+                if age:
+                    if age < 30:
+                        personalized_notes.append("若い世代向けのトレンドアイテムやカジュアルなギフトがおすすめです")
+                    elif age >= 50:
+                        personalized_notes.append("上質で落ち着いたアイテムや体験型のギフトがおすすめです")
+                    else:
+                        personalized_notes.append("幅広い年代に喜ばれる上品なアイテムがおすすめです")
+
+                if gender == "女性":
+                    personalized_notes.append("美容・コスメ関連アイテムやアクセサリーも人気です")
+                elif gender == "男性":
+                    personalized_notes.append("実用的なアイテムやグルメ関連のギフトが好まれる傾向があります")
+
+            # セッション分析結果を活用
             if user_context and user_context.get("interests"):
                 interests = user_context["interests"]
                 if "食事" in interests or "グルメ" in interests:

@@ -1,12 +1,31 @@
 """エージェント用のプロンプトテンプレート設定。"""
 
+import json
+from pathlib import Path
 from typing import Dict, Any, Optional
 from src.core.tools import tool_registry
+from src.utils.logger import get_logger
 
 try:
     from langchain_core.messages import SystemMessage
 except ImportError as e:
     raise ImportError("langchain-core is required. Install it with: pip install langchain-core") from e
+
+logger = get_logger(__name__)
+
+
+def _load_narrative_data() -> Optional[Dict[str, Any]]:
+    """ナラティブデータを読み込む。"""
+    try:
+        project_root = Path(__file__).parent.parent.parent
+        narrative_file = project_root / "input" / "narrative_data.json"
+
+        if narrative_file.exists():
+            with open(narrative_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        logger.warning(f"Failed to load narrative data: {e}")
+    return None
 
 
 def get_agent_system_prompt(user_analysis: Optional[Dict[str, Any]] = None) -> SystemMessage:
@@ -31,10 +50,28 @@ def get_agent_system_prompt(user_analysis: Optional[Dict[str, Any]] = None) -> S
     else:
         tools_text = "（現在利用可能なツールはありません）"
 
+    # ナラティブデータを読み込み
+    narrative_data = _load_narrative_data()
+
     # ユーザー分析に基づくパーソナライゼーション情報
     personalization_text = ""
+
+    # ナラティブデータがある場合の情報
+    if narrative_data:
+        narrative_info = []
+        if narrative_data.get("age"):
+            narrative_info.append(f"年齢: {narrative_data['age']}歳")
+        if narrative_data.get("gender"):
+            narrative_info.append(f"性別: {narrative_data['gender']}")
+
+        if narrative_info:
+            personalization_text += f"\n\n**ユーザー基本情報:**\n{', '.join(narrative_info)}\n"
+
     if user_analysis and user_analysis.get("analysis_summary"):
-        personalization_text = f"\n\n**ユーザープロファイル（今回のセッション分析）:**\n{user_analysis['analysis_summary']}\n\n上記のユーザー特性を踏まえて、関連する店舗や情報を優先的に案内し、ユーザーの興味に合った提案を心がけてください。"
+        personalization_text += f"\n**ユーザープロファイル（今回のセッション分析）:**\n{user_analysis['analysis_summary']}\n"
+
+    if personalization_text:
+        personalization_text += "\n上記のユーザー特性を踏まえて、年齢・性別・興味に合った店舗や情報を優先的に案内し、パーソナライズした提案を心がけてください。"
 
     system_message_content = f"""あなたは麻布台ヒルズ総合案内AIアシスタントです。
 
@@ -63,6 +100,7 @@ def get_agent_system_prompt(user_analysis: Optional[Dict[str, Any]] = None) -> S
 - 店舗データ: 麻布台ヒルズ内の店舗営業時間、連絡先、住所、カテゴリ
 - 現在時刻: 日本時間での現在日時と曜日
 - 臨時休業情報: 特別休業日や営業時間変更情報
+- ナラティブデータ: ユーザーの基本属性（年齢、性別など）に基づくパーソナライズ情報
 - ギフトカタログ: 予算帯別、カテゴリ別の商品・サービス情報
 - 活動リスト: 時間帯別、グループ別の推奨活動
 
@@ -70,21 +108,24 @@ def get_agent_system_prompt(user_analysis: Optional[Dict[str, Any]] = None) -> S
 {tools_text}
 
 対話の進め方:
-- **初回または新しいトピック時**: ユーザー分析ツールを使用してチャット履歴から興味・嗜好を分析
-- **店舗案内時**: 分析結果を活用してユーザーの興味に合った店舗を優先的に案内
+- **初回または新しいトピック時**: ユーザー分析ツールを使用してチャット履歴から興味・嗜好を分析し、ナラティブデータから基本属性を取得
+- **ナラティブデータ活用**: データ検索ツールでナラティブデータを取得し、年齢・性別に応じた推奨を提供
+- **店舗案内時**: 分析結果とナラティブデータを活用してユーザーの属性と興味に合った店舗を優先的に案内
 - **営業状況確認**: 店舗名が挙げられた時は営業時間チェックツールで現在の営業状況を確認
-- **ギフト質問時**: ギフト提案ツールを使用して予算・シーンに応じた商品・サービスを提案
-- **活動計画質問時**: 活動計画ツールを使用して時間帯・興味に応じたスケジュールを作成
-- **パーソナライズ提案**: ユーザーの行動パターンや興味に基づいた店舗・時間帯・サービスを提案
-- **営業時間外対応**: 次回営業開始時間と共に、ユーザーの興味に合う代替案も提案
+- **ギフト質問時**: ギフト提案ツールを使用して予算・シーン・年齢・性別に応じた商品・サービスを提案
+- **活動計画質問時**: 活動計画ツールを使用して時間帯・興味・年齢層に応じたスケジュールを作成
+- **パーソナライズ提案**: ユーザーの行動パターン、興味、基本属性に基づいた店舗・時間帯・サービスを提案
+- **営業時間外対応**: 次回営業開始時間と共に、ユーザーの属性と興味に合う代替案も提案
 
 パーソナライゼーション例:
+- **年齢に基づく提案**: 20代→トレンド重視、50代以上→上質で落ち着いた選択肢
+- **性別に基づく提案**: 女性→美容・アクセサリー重視、男性→実用性・グルメ重視
 - 飲食への興味が高い → レストラン・カフェ情報を詳しく案内
 - 夜の時間帯が多い → ディナー営業やナイトライフ情報を重視
 - 家族連れパターン → キッズフレンドリーな店舗を優先案内
 - 一人利用が多い → カウンター席やカジュアルな店舗を提案
-- ギフト関連質問 → 予算と受取人に応じた商品・サービス・店舗を提案
-- 活動計画質問 → 興味・時間帯・人数に応じた最適なスケジュールを作成{personalization_text}
+- ギフト関連質問 → 予算・受取人・年齢・性別に応じた商品・サービス・店舗を提案
+- 活動計画質問 → 興味・時間帯・人数・年齢層に応じた最適なスケジュールを作成{personalization_text}
 """
 
     return SystemMessage(content=system_message_content)

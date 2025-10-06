@@ -111,12 +111,43 @@ class UserInterestAnalysisTool(BaseTool):
 
         return patterns
 
+    def _load_narrative_data(self) -> Optional[Dict[str, Any]]:
+        """ナラティブデータを読み込む。"""
+        try:
+            from pathlib import Path
+            import json
+
+            project_root = Path(__file__).parent.parent.parent.parent
+            narrative_file = project_root / "input" / "narrative_data.json"
+
+            if narrative_file.exists():
+                with open(narrative_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception as e:
+            return None
+        return None
+
     def execute(self, **kwargs) -> Dict[str, Any]:
         """チャット履歴を分析してユーザーの趣味嗜好を更新する。"""
         try:
             chat_history = kwargs.get("chat_history", [])
 
+            # ナラティブデータを取得
+            narrative_data = self._load_narrative_data()
+
             if not chat_history:
+                # チャット履歴がなくてもナラティブデータがあれば基本情報を提供
+                if narrative_data:
+                    return {
+                        "success": True,
+                        "analysis": {
+                            "narrative_profile": narrative_data,
+                            "primary_interests": {},
+                            "behavior_patterns": {},
+                            "analysis_summary": self._generate_narrative_summary(narrative_data)
+                        },
+                        "message": "ナラティブデータに基づく基本分析が完了しました"
+                    }
                 return {
                     "success": False,
                     "message": "分析するチャット履歴がありません"
@@ -167,6 +198,13 @@ class UserInterestAnalysisTool(BaseTool):
                 "analysis_summary": self._generate_summary(top_interests, top_patterns)
             }
 
+            # ナラティブデータを統合
+            if narrative_data:
+                analysis_result["narrative_profile"] = narrative_data
+                # ナラティブデータを考慮したサマリーを追加
+                narrative_summary = self._generate_narrative_summary(narrative_data)
+                analysis_result["analysis_summary"] = f"{narrative_summary} | {analysis_result['analysis_summary']}" if analysis_result['analysis_summary'] else narrative_summary
+
             return {
                 "success": True,
                 "analysis": analysis_result,
@@ -207,6 +245,26 @@ class UserInterestAnalysisTool(BaseTool):
                 summary_parts.append(f"行動パターン: {', '.join(pattern_names[:2])}")
 
         return " | ".join(summary_parts) if summary_parts else "分析データが不十分です"
+
+    def _generate_narrative_summary(self, narrative_data: Dict[str, Any]) -> str:
+        """ナラティブデータのサマリーを生成する。"""
+        summary_parts = []
+
+        age = narrative_data.get("age")
+        gender = narrative_data.get("gender")
+
+        if age:
+            if age < 30:
+                summary_parts.append("若い世代")
+            elif age >= 50:
+                summary_parts.append("シニア世代")
+            else:
+                summary_parts.append("中堅世代")
+
+        if gender:
+            summary_parts.append(f"{gender}")
+
+        return "基本プロフィール: " + ", ".join(summary_parts) if summary_parts else "基本プロフィール情報なし"
 
     def get_current_analysis(self) -> Dict[str, Any]:
         """現在の分析結果を取得する。"""

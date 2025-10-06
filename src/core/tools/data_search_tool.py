@@ -65,7 +65,12 @@ class DataSearchTool(BaseTool):
             if data_type in ["narrative", "all"]:
                 narrative_data = self._get_narrative_data()
                 if narrative_data:
-                    results["narrative"] = narrative_data
+                    # ナラティブデータを使いやすい形で提供
+                    enhanced_narrative = {
+                        "user_profile": narrative_data,
+                        "recommendations": self._generate_narrative_based_recommendations(narrative_data)
+                    }
+                    results["narrative"] = enhanced_narrative
 
             return results
 
@@ -152,6 +157,44 @@ class DataSearchTool(BaseTool):
         except Exception as e:
             logger.error(f"Error reading narrative file: {e}")
             return None
+
+    def _generate_narrative_based_recommendations(self, narrative_data: Dict[str, Any]) -> Dict[str, Any]:
+        """ナラティブデータに基づく推奨事項を生成する。"""
+        recommendations = {
+            "store_categories": [],
+            "activity_suggestions": [],
+            "time_preferences": [],
+            "gift_preferences": []
+        }
+
+        age = narrative_data.get("age")
+        gender = narrative_data.get("gender")
+
+        # 年齢に基づく推奨
+        if age:
+            if age < 30:
+                recommendations["store_categories"].extend(["カジュアルダイニング", "トレンドショップ", "カフェ"])
+                recommendations["activity_suggestions"].extend(["写真撮影スポット巡り", "新しいお店の発見"])
+                recommendations["gift_preferences"].extend(["トレンドアイテム", "インスタ映えするグッズ"])
+            elif age >= 50:
+                recommendations["store_categories"].extend(["高級レストラン", "伝統工芸品店", "スパ・エステ"])
+                recommendations["activity_suggestions"].extend(["ゆったりとした食事", "文化的な体験"])
+                recommendations["gift_preferences"].extend(["上質なアイテム", "体験型ギフト"])
+            else:
+                recommendations["store_categories"].extend(["ビジネスカジュアル店舗", "ファインダイニング"])
+                recommendations["activity_suggestions"].extend(["効率的なショッピング", "質の高い食事体験"])
+
+        # 性別に基づく推奨
+        if gender == "女性":
+            recommendations["store_categories"].extend(["コスメティック", "ジュエリー", "ファッション"])
+            recommendations["activity_suggestions"].extend(["美容関連サービス", "アクセサリーショッピング"])
+            recommendations["gift_preferences"].extend(["美容アイテム", "アクセサリー", "スイーツ"])
+        elif gender == "男性":
+            recommendations["store_categories"].extend(["メンズファッション", "ガジェット", "グルメ"])
+            recommendations["activity_suggestions"].extend(["実用的なショッピング", "グルメ体験"])
+            recommendations["gift_preferences"].extend(["実用アイテム", "グルメギフト", "体験券"])
+
+        return recommendations
 
 
 class StoreInfoTool(BaseTool):
