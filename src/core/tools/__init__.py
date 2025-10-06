@@ -1,6 +1,8 @@
 """Tools module for agent functionality."""
 
+from src.core.tools.activity_planner_tool import ActivityPlannerTool
 from src.core.tools.data_search_tool import DataSearchTool, EventInfoTool, StoreInfoTool
+from src.core.tools.gift_recommendation_tool import GiftRecommendationTool
 from src.core.tools.math_tool import MultiplyTool
 from src.core.tools.registry import ToolRegistry
 from src.core.tools.store_hours_tool import StoreHoursCheckTool
@@ -25,6 +27,12 @@ tool_registry.register_tool(StoreHoursCheckTool())
 # ユーザー分析ツールを登録
 tool_registry.register_tool(UserInterestAnalysisTool())
 
+# ギフト提案ツールを登録
+tool_registry.register_tool(GiftRecommendationTool())
+
+# 活動計画ツールを登録
+tool_registry.register_tool(ActivityPlannerTool())
+
 __all__ = [
     "tool_registry",
     "ToolRegistry",
@@ -34,5 +42,7 @@ __all__ = [
     "StoreInfoTool",
     "EventInfoTool",
     "StoreHoursCheckTool",
-    "UserInterestAnalysisTool"
+    "UserInterestAnalysisTool",
+    "GiftRecommendationTool",
+    "ActivityPlannerTool"
 ]
