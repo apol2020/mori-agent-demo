@@ -35,13 +35,28 @@ class GetCurrentTimeTool(BaseTool):
             timezone: タイムゾーン名（例: 'Asia/Tokyo', 'America/New_York'）
 
         Returns:
-            現在時刻の文字列
+            現在時刻の文字列（曜日情報を含む）
         """
         try:
             tz = pytz.timezone(timezone)
-            current_time = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-            logger.debug(f"Current time for {timezone}: {current_time}")
-            return current_time
+            current_datetime = datetime.now(tz)
+            current_time = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+            # 曜日情報を追加
+            weekdays = {
+                0: "月曜日",
+                1: "火曜日",
+                2: "水曜日",
+                3: "木曜日",
+                4: "金曜日",
+                5: "土曜日",
+                6: "日曜日"
+            }
+            weekday_name = weekdays[current_datetime.weekday()]
+            result = f"{current_time} ({weekday_name})"
+
+            logger.debug(f"Current time for {timezone}: {result}")
+            return result
         except Exception as e:
             error_msg = f"タイムゾーンの取得に失敗しました: {e}"
             logger.error(error_msg)
