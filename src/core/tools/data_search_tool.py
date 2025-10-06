@@ -90,15 +90,15 @@ class DataSearchTool(BaseTool):
                     # クエリ検索（店舗名、説明、住所で検索）
                     if query:
                         searchable_text = f"{row.get('store_name', '')} {row.get('description', '')} {row.get('address', '')}".lower()
-                        
+
                         # クエリをスペースで分割してキーワードリストにする
                         keywords = [kw.strip() for kw in query.lower().split() if kw.strip()]
-                        
+
                         # いずれかのキーワードがマッチすれば結果に含める
                         if not keywords or any(keyword in searchable_text for keyword in keywords):
                             results.append(row)
                             continue
-                        
+
                         # 何もマッチしなければスキップ
                         continue
 
@@ -122,15 +122,15 @@ class DataSearchTool(BaseTool):
                     # クエリ検索（イベント名、説明、場所で検索）
                     if query:
                         searchable_text = f"{row.get('event_name', '')} {row.get('description', '')} {row.get('location', '')}".lower()
-                        
+
                         # クエリをスペースで分割してキーワードリストにする
                         keywords = [kw.strip() for kw in query.lower().split() if kw.strip()]
-                        
+
                         # いずれかのキーワードがマッチすれば結果に含める
                         if not keywords or any(keyword in searchable_text for keyword in keywords):
                             results.append(row)
                             continue
-                        
+
                         # 何もマッチしなければスキップ
                         continue
 
