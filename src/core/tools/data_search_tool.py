@@ -2,7 +2,6 @@
 
 import csv
 import json
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -32,7 +31,69 @@ class DataSearchTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "店舗データ、イベントデータ、ナラティブデータを検索する。検索キーワードやカテゴリを指定して関連情報を取得できる。"
+        return """[DataSearchSQL] AIエージェントコンシェルジュツール
+
+        麻布台ヒルズの店舗・イベント・ナラティブデータに対する絞り込み検索を実行します。
+        SQLを直接書く必要はなく、パラメータ指定で簡単に検索できます。
+
+        ⚠️ 制限事項:
+        - 全データ取得は推奨されません
+        - 最大100件まで取得可能（limit指定推奨）
+        - データ型に応じたフィルタリング条件を指定
+        - 日本語カラム名は直接指定可能
+
+        ----------------------------
+        📊 データセット概要
+        ----------------------------
+        • 店舗データ: 4件（麻布台ヒルズ関連店舗）
+        • イベントデータ: 32件（関連イベント情報）
+        • 主要カラム数: 11カラム（店舗）、12カラム（イベント）
+
+        🔑 主要カラム分類:
+        • 識別: store_id, event_name
+        • 基本情報: store_name, description, category, location
+        • 営業情報: opening_hours, irregular_closures
+        • 連絡先: phone, email, address
+        • イベント詳細: date_time, capacity, cost, registration_required
+        • ステータス: extraction_status, target_audience
+
+        ----------------------------
+        💡 使用例
+        ----------------------------
+        1. カテゴリ別店舗検索:
+           data_type="stores"
+           column_filters={"category": "retail"}
+
+        2. 電話予約可能な店舗:
+           data_type="stores"
+           column_filters={"phone": {"operator": "not_null"}}
+           sort_by="store_name"
+
+        3. イベント名での部分一致検索:
+           data_type="events"
+           column_filters={"event_name": {"operator": "contains", "value": "Market"}}
+
+        4. 複合検索（店舗名とカテゴリ）:
+           query="ヒルズ"
+           data_type="stores"
+           column_filters={"category": "cafe"}
+
+        5. ページネーション対応検索:
+           data_type="events"
+           sort_by="event_name"
+           limit=5
+           offset=0
+
+        ----------------------------
+        🎯 推奨SELECT句（用途別）
+        ----------------------------
+        • 店舗基本情報: store_name, category, phone, address
+        • イベント概要: event_name, description, date_time, location
+        • 営業時間確認: store_name, opening_hours, irregular_closures
+        • 連絡先一覧: store_name, phone, email, address
+
+        利用可能な演算子: equals, contains, like, not_null, is_null, gt, lt, gte, lte, in
+        """
 
     def execute(self, **kwargs: Any) -> Any:
         """データを検索して結果を返す。
@@ -54,7 +115,7 @@ class DataSearchTool(BaseTool):
         query = kwargs.get("query", "")
         data_type = kwargs.get("data_type", "all")
         category = kwargs.get("category", "")
-        
+
         # 新しいSQLライクパラメータ
         column_filters = kwargs.get("column_filters", {})
         sort_by = kwargs.get("sort_by", "")
@@ -107,7 +168,7 @@ class DataSearchTool(BaseTool):
         try:
             results = []
             column_filters = column_filters or {}
-            
+
             with open(self.stores_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
@@ -149,7 +210,7 @@ class DataSearchTool(BaseTool):
         try:
             results = []
             column_filters = column_filters or {}
-            
+
             with open(self.events_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
@@ -231,20 +292,20 @@ class DataSearchTool(BaseTool):
 
     def _apply_column_filters(self, row: Dict[str, Any], column_filters: Dict[str, Any]) -> bool:
         """カラム別フィルタリングを適用する。
-        
+
         Args:
             row: データ行
             column_filters: カラムフィルタ設定
-            
+
         Returns:
             フィルタ条件に合致するかどうか
         """
         if not column_filters:
             return True
-            
+
         for column, filter_config in column_filters.items():
             column_value = row.get(column, "")
-            
+
             # 簡潔記法（文字列直接指定）
             if isinstance(filter_config, str):
                 if column_value.lower() != filter_config.lower():
@@ -253,26 +314,26 @@ class DataSearchTool(BaseTool):
             elif isinstance(filter_config, dict):
                 operator = filter_config.get("operator", "equals")
                 value = filter_config.get("value", "")
-                
+
                 if not self._evaluate_condition(column_value, operator, value):
                     return False
-                    
+
         return True
-    
+
     def _evaluate_condition(self, column_value: str, operator: str, target_value: Any) -> bool:
         """条件評価を行う。
-        
+
         Args:
             column_value: カラムの値
             operator: 演算子
             target_value: 比較対象の値
-            
+
         Returns:
             条件に合致するかどうか
         """
         column_str = str(column_value).lower()
         target_str = str(target_value).lower()
-        
+
         if operator == "equals":
             return column_str == target_str
         elif operator == "contains":
@@ -313,45 +374,45 @@ class DataSearchTool(BaseTool):
         else:
             # デフォルトは equals
             return column_str == target_str
-            
+
     def _apply_sorting(self, data: List[Dict[str, Any]], sort_by: str, sort_order: str) -> List[Dict[str, Any]]:
         """データのソートを適用する。
-        
+
         Args:
             data: ソート対象のデータ
             sort_by: ソート対象カラム
             sort_order: ソート順（"asc", "desc"）
-            
+
         Returns:
             ソート済みのデータ
         """
         if not sort_by or not data:
             return data
-            
+
         reverse = sort_order == "desc"
-        
+
         try:
             return sorted(data, key=lambda x: str(x.get(sort_by, "")), reverse=reverse)
         except Exception as e:
             logger.warning(f"Sorting failed: {e}")
             return data
-    
+
     def _apply_pagination(self, data: List[Dict[str, Any]], limit: Optional[int], offset: int) -> List[Dict[str, Any]]:
         """ページネーションを適用する。
-        
+
         Args:
             data: ページネーション対象のデータ
             limit: 取得件数制限
             offset: オフセット
-            
+
         Returns:
             ページネーション適用後のデータ
         """
         if not data:
             return data
-            
+
         start_idx = max(0, offset)
-        
+
         if limit is None:
             return data[start_idx:]
         else:

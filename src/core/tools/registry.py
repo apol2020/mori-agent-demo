@@ -75,8 +75,8 @@ class ToolRegistry:
 
             @tool
             def search_data(
-                query: str = "", 
-                data_type: str = "all", 
+                query: str = "",
+                data_type: str = "all",
                 category: str = "",
                 column_filters: Optional[dict] = None,
                 sort_by: str = "",
@@ -84,7 +84,10 @@ class ToolRegistry:
                 limit: Optional[int] = None,
                 offset: int = 0
             ) -> dict:
-                """店舗データ、イベントデータ、ナラティブデータを検索します。
+                """[DataSearchSQL] 麻布台ヒルズデータ検索ツール
+
+                麻布台ヒルズの店舗・イベント・ナラティブデータに対する絞り込み検索を実行します。
+                SQLを直接書く必要はなく、パラメータ指定で簡単に検索できます。
 
                 Args:
                     query: 検索クエリ（店舗名、イベント名、説明文などで検索）
@@ -97,11 +100,11 @@ class ToolRegistry:
                     offset: オフセット（ページネーション用）
 
                 Returns:
-                    検索結果の辞書
+                    検索結果の辞書（data, report, query_info含む）
                 """
                 return tool_instance.execute(
-                    query=query, 
-                    data_type=data_type, 
+                    query=query,
+                    data_type=data_type,
                     category=category,
                     column_filters=column_filters or {},
                     sort_by=sort_by,
