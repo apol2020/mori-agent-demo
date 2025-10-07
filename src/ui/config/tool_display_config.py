@@ -23,11 +23,6 @@ class ToolDisplayConfig:
             "input_language": "text",
             "output_language": "text",
         },
-        "multiply": {
-            "icon": "🔢",
-            "input_language": "text",
-            "output_language": "text",
-        },
     }
 
     @classmethod

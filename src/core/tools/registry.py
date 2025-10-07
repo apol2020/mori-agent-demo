@@ -71,23 +71,6 @@ class ToolRegistry:
 
             return get_current_time
 
-        elif tool_name == "multiply":
-
-            @tool
-            def multiply(a: int, b: int) -> int:
-                """二つの数値を掛け算します。
-
-                Args:
-                    a: 最初の数値
-                    b: 二番目の数値
-
-                Returns:
-                    掛け算の結果
-                """
-                return tool_instance.execute(a=a, b=b)
-
-            return multiply
-
         elif tool_name == "search_data":
 
             @tool
