@@ -71,10 +71,10 @@ class ToolRegistry:
 
             return get_current_time
 
-        elif tool_name == "search_data":
+        elif tool_name == "search_azabudai_data":
 
             @tool
-            def search_data(
+            def search_azabudai_data(
                 query: str = "",
                 store_id: str = "",
                 data_type: str = "all",
@@ -85,7 +85,7 @@ class ToolRegistry:
                 limit: Optional[int] = None,
                 offset: int = 0
             ) -> dict:
-                """[DataSearchSQL] 麻布台ヒルズデータ検索ツール
+                """search_azabudai_data: 麻布台ヒルズデータ検索ツール
 
                 麻布台ヒルズの店舗・イベント・ナラティブデータに対する絞り込み検索を実行します。
                 SQLを直接書く必要はなく、パラメータ指定で簡単に検索できます。
@@ -116,7 +116,7 @@ class ToolRegistry:
                     offset=offset
                 )
 
-            return search_data
+            return search_azabudai_data
 
         elif tool_name == "get_store_info":
 
@@ -166,6 +166,23 @@ class ToolRegistry:
                 return tool_instance.execute(event_name=event_name)
 
             return get_event_info
+
+        elif tool_name == "check_store_hours":
+
+            @tool
+            def check_store_hours(store_name: str = "", store_id: str = "") -> dict:
+                """店舗名を指定して、現在その店舗が営業中かどうかを確認します。
+
+                Args:
+                    store_name: 店舗名
+                    store_id: 店舗ID（STR-0001形式）
+
+                Returns:
+                    営業状況の詳細情報（営業中/営業時間外、営業時間、臨時休業情報など）
+                """
+                return tool_instance.execute(store_name=store_name, store_id=store_id)
+
+            return check_store_hours
 
         else:
             # デフォルトの汎用ツール（型注釈なし）
