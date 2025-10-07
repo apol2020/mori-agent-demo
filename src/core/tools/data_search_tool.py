@@ -60,25 +60,29 @@ class DataSearchTool(BaseTool):
         ----------------------------
         💡 使用例
         ----------------------------
-        1. カテゴリ別店舗検索:
+        1. 店舗IDで直接検索（推奨）:
+           store_id="STR-0001"
+           ※ 店舗情報と関連イベントを一括取得
+
+        2. カテゴリ別店舗検索:
            data_type="stores"
            column_filters={"category": "retail"}
 
-        2. 電話予約可能な店舗:
+        3. 電話予約可能な店舗:
            data_type="stores"
            column_filters={"phone": {"operator": "not_null"}}
            sort_by="store_name"
 
-        3. イベント名での部分一致検索:
+        4. イベント名での部分一致検索:
            data_type="events"
            column_filters={"event_name": {"operator": "contains", "value": "Market"}}
 
-        4. 複合検索（店舗名とカテゴリ）:
+        5. 複合検索（店舗名とカテゴリ）:
            query="ヒルズ"
            data_type="stores"
            column_filters={"category": "cafe"}
 
-        5. ページネーション対応検索:
+        6. ページネーション対応検索:
            data_type="events"
            sort_by="event_name"
            limit=5
@@ -100,6 +104,7 @@ class DataSearchTool(BaseTool):
 
         Args:
             query (str, optional): 検索クエリ（店舗名、イベント名、説明文などで検索）
+            store_id (str, optional): 店舗ID（STR-0001形式）で直接検索
             data_type (str, optional): データタイプを指定（"stores", "events", "narrative", "all"）
             category (str, optional): カテゴリで絞り込み（店舗データの場合）
             column_filters (dict, optional): カラム別の詳細検索条件
@@ -113,6 +118,7 @@ class DataSearchTool(BaseTool):
         """
         # 既存パラメータ（後方互換性）
         query = kwargs.get("query", "")
+        store_id = kwargs.get("store_id", "")
         data_type = kwargs.get("data_type", "all")
         category = kwargs.get("category", "")
 
@@ -125,6 +131,20 @@ class DataSearchTool(BaseTool):
 
         try:
             results = {}
+
+            # 店舗IDが指定された場合は優先して処理
+            if store_id:
+                store_data = self._get_store_by_id(store_id)
+                if store_data:
+                    results["stores"] = [store_data]
+                    # 関連イベントも取得
+                    if data_type in ["events", "all"]:
+                        related_events = self._get_events_by_store_id(store_id, store_data)
+                        if related_events:
+                            results["events"] = related_events
+                    return results
+                else:
+                    return {"error": f"店舗ID「{store_id}」が見つかりませんでした"}
 
             if data_type in ["stores", "all"]:
                 stores_data = self._search_stores(query, category, column_filters)
@@ -159,6 +179,67 @@ class DataSearchTool(BaseTool):
         except Exception as e:
             logger.error(f"Error searching data: {e}")
             return {"error": f"データ検索中にエラーが発生しました: {str(e)}"}
+
+    def _get_store_by_id(self, store_id: str) -> Optional[Dict[str, Any]]:
+        """店舗IDで店舗データを取得する。
+
+        Args:
+            store_id: 店舗ID（STR-0001形式）
+
+        Returns:
+            店舗データまたはNone
+        """
+        if not self.stores_file.exists():
+            return None
+
+        try:
+            with open(self.stores_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row.get('store_id', '').upper() == store_id.upper():
+                        return row
+            return None
+        except Exception as e:
+            logger.error(f"Error getting store by ID: {e}")
+            return None
+
+    def _get_events_by_store_id(self, store_id: str, store_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """店舗IDに関連するイベントを取得する。
+
+        Args:
+            store_id: 店舗ID
+            store_data: 店舗データ（店舗名や電話番号での照合用）
+
+        Returns:
+            関連イベントのリスト
+        """
+        if not self.events_file.exists():
+            return []
+
+        try:
+            results = []
+            store_name = store_data.get('store_name', '')
+            store_phone = store_data.get('phone', '')
+
+            with open(self.events_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # 店舗名での照合
+                    location = row.get('location', '')
+                    if store_name and store_name in location:
+                        results.append(row)
+                        continue
+
+                    # 電話番号での照合
+                    contact_info = row.get('contact_info', '')
+                    if store_phone and store_phone in contact_info:
+                        results.append(row)
+                        continue
+
+            return results
+        except Exception as e:
+            logger.error(f"Error getting events by store ID: {e}")
+            return []
 
     def _search_stores(self, query: str, category: str = "", column_filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """店舗データを検索する。"""
@@ -435,21 +516,23 @@ class StoreInfoTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "店舗名を指定して、その店舗の詳細情報（営業時間、連絡先、住所など）を取得する。"
+        return "店舗名または店舗ID（STR-0001形式）を指定して、その店舗の詳細情報（営業時間、連絡先、住所など）を取得する。店舗IDでの検索が優先される。"
 
     def execute(self, **kwargs: Any) -> Any:
         """店舗の詳細情報を取得する。
 
         Args:
-            store_name (str): 店舗名
+            store_name (str, optional): 店舗名
+            store_id (str, optional): 店舗ID（STR-0001形式）
 
         Returns:
             店舗の詳細情報
         """
         store_name = kwargs.get("store_name", "")
+        store_id = kwargs.get("store_id", "")
 
-        if not store_name:
-            return {"error": "店舗名を指定してください"}
+        if not store_name and not store_id:
+            return {"error": "店舗名または店舗IDを指定してください"}
 
         try:
             if not self.stores_file.exists():
@@ -458,14 +541,65 @@ class StoreInfoTool(BaseTool):
             with open(self.stores_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    if store_name.lower() in row.get('store_name', '').lower():
+                    # 店舗IDでの完全一致検索（優先）
+                    if store_id and row.get('store_id', '').upper() == store_id.upper():
+                        return row
+                    # 店舗名での部分一致検索
+                    if store_name and store_name.lower() in row.get('store_name', '').lower():
                         return row
 
-            return {"error": f"店舗「{store_name}」が見つかりませんでした"}
+            search_term = store_id if store_id else store_name
+            return {"error": f"店舗「{search_term}」が見つかりませんでした"}
 
         except Exception as e:
             logger.error(f"Error getting store info: {e}")
             return {"error": f"店舗情報取得中にエラーが発生しました: {str(e)}"}
+
+
+class StoreByIdTool(BaseTool):
+    """店舗IDで店舗と関連イベントを一括取得する専用ツール。"""
+
+    def __init__(self) -> None:
+        """店舗ID検索ツールを初期化する。"""
+        self.data_search_tool = DataSearchTool()
+
+    @property
+    def name(self) -> str:
+        return "get_store_by_id"
+
+    @property
+    def description(self) -> str:
+        return """店舗ID（STR-0001形式）を指定して、その店舗の詳細情報と関連イベントを一括取得する。
+        最も効率的な店舗情報取得方法。店舗情報、関連イベント、営業時間、連絡先などを包括的に提供。"""
+
+    def execute(self, **kwargs: Any) -> Any:
+        """店舗IDで店舗と関連データを取得する。
+
+        Args:
+            store_id (str): 店舗ID（STR-0001形式）
+
+        Returns:
+            店舗情報と関連イベントの辞書
+        """
+        store_id = kwargs.get("store_id", "")
+
+        if not store_id:
+            return {"error": "店舗IDを指定してください（例: STR-0001）"}
+
+        # DataSearchToolを使用してデータ取得
+        result = self.data_search_tool.execute(store_id=store_id, data_type="all")
+
+        # 結果を整理
+        if "error" in result:
+            return result
+
+        return {
+            "store_id": store_id,
+            "store_info": result.get("stores", [{}])[0] if result.get("stores") else None,
+            "related_events": result.get("events", []),
+            "total_related_events": len(result.get("events", [])),
+            "success": True
+        }
 
 
 class EventInfoTool(BaseTool):
