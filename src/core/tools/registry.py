@@ -74,18 +74,41 @@ class ToolRegistry:
         elif tool_name == "search_data":
 
             @tool
-            def search_data(query: str = "", data_type: str = "all", category: str = "") -> dict:
+            def search_data(
+                query: str = "", 
+                data_type: str = "all", 
+                category: str = "",
+                column_filters: Optional[dict] = None,
+                sort_by: str = "",
+                sort_order: str = "asc",
+                limit: Optional[int] = None,
+                offset: int = 0
+            ) -> dict:
                 """店舗データ、イベントデータ、ナラティブデータを検索します。
 
                 Args:
                     query: 検索クエリ（店舗名、イベント名、説明文などで検索）
                     data_type: データタイプを指定（"stores", "events", "narrative", "all"）
                     category: カテゴリで絞り込み（店舗データの場合）
+                    column_filters: カラム別の詳細検索条件（例: {"category": "retail", "store_name": {"operator": "contains", "value": "ヒルズ"}}）
+                    sort_by: ソート対象カラム
+                    sort_order: ソート順（"asc", "desc"）
+                    limit: 取得件数制限
+                    offset: オフセット（ページネーション用）
 
                 Returns:
                     検索結果の辞書
                 """
-                return tool_instance.execute(query=query, data_type=data_type, category=category)
+                return tool_instance.execute(
+                    query=query, 
+                    data_type=data_type, 
+                    category=category,
+                    column_filters=column_filters or {},
+                    sort_by=sort_by,
+                    sort_order=sort_order,
+                    limit=limit,
+                    offset=offset
+                )
 
             return search_data
 
