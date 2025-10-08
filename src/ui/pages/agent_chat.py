@@ -124,12 +124,19 @@ async def _stream_assistant_response(user_input: str) -> list:
     ):
         if chunk:
             current_text += chunk
-            text_placeholder.markdown(current_text + "▌")
+            # ストリーミング中は基本的な改行処理のみ適用（パフォーマンスのため）
+            display_text = current_text.replace('\n', '<br>') if '\n' in current_text else current_text
+            text_placeholder.markdown(display_text + "▌", unsafe_allow_html=True)
 
         if tool_execution:
             # ツール実行前のテキストを確定
             if current_text:
-                text_placeholder.markdown(current_text)
+                # 改行と段落分けを適切に処理
+                from src.ui.components.chat_interface import _format_message_content
+                formatted_text = _format_message_content(current_text)
+                # HTMLを使用してより確実な改行処理を行う
+                html_content = formatted_text.replace('\n', '<br>')
+                text_placeholder.markdown(html_content, unsafe_allow_html=True)
                 parts.append(TextPart(content=current_text))
                 current_text = ""
 
@@ -152,7 +159,12 @@ async def _stream_assistant_response(user_input: str) -> list:
 
     # 最後のテキストパートを確定
     if current_text:
-        text_placeholder.markdown(current_text)
+        # 改行と段落分けを適切に処理
+        from src.ui.components.chat_interface import _format_message_content
+        formatted_text = _format_message_content(current_text)
+        # HTMLを使用してより確実な改行処理を行う
+        html_content = formatted_text.replace('\n', '<br>')
+        text_placeholder.markdown(html_content, unsafe_allow_html=True)
         parts.append(TextPart(content=current_text))
 
     return parts
