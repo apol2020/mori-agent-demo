@@ -16,10 +16,14 @@ src/core/models/agent_model.py
 src/core/services/__init__.py
 src/core/services/agent_service.py
 src/core/tools/__init__.py
+src/core/tools/activity_planner_tool.py
 src/core/tools/base.py
-src/core/tools/math_tool.py
+src/core/tools/data_search_tool.py
+src/core/tools/gift_recommendation_tool.py
 src/core/tools/registry.py
+src/core/tools/store_hours_tool.py
 src/core/tools/time_tool.py
+src/core/tools/user_analysis_tool.py
 src/infrastructure/__init__.py
 src/infrastructure/llm/__init__.py
 src/infrastructure/llm/anthropic_client.py

@@ -11,6 +11,31 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+def find_data_file(input_dir: Path, patterns: List[str], default_name: str) -> Path:
+    """指定されたパターンでデータファイルを検索する。
+
+    Args:
+        input_dir: 検索対象ディレクトリ
+        patterns: 検索パターンのリスト（優先順位順）
+        default_name: 見つからない場合のデフォルトファイル名
+
+    Returns:
+        見つかったファイルのPath、見つからない場合はデフォルトPath
+    """
+    try:
+        for pattern in patterns:
+            matching_files = list(input_dir.glob(pattern))
+            if matching_files:
+                # 最新のファイルを選択（作成日時順）
+                return max(matching_files, key=lambda p: p.stat().st_mtime)
+
+        # 見つからない場合はデフォルトパスを返す
+        return input_dir / default_name
+    except Exception as e:
+        logger.warning(f"Error finding file with patterns {patterns}: {e}")
+        return input_dir / default_name
+
+
 class DataSearchTool(BaseTool):
     """inputフォルダ内のデータを検索するツール。"""
 
@@ -20,10 +45,10 @@ class DataSearchTool(BaseTool):
         self.project_root = Path(__file__).parent.parent.parent.parent
         self.input_dir = self.project_root / "input"
 
-        # データファイルのパス
-        self.events_file = self.input_dir / "events.csv"
-        self.stores_file = self.input_dir / "filtered_store_data_20251007_141616.csv"
-        self.narrative_file = self.input_dir / "narrative_data.json"
+        # データファイルのパスを動的に検索
+        self.events_file = find_data_file(self.input_dir, ["events*.csv", "*event*.csv"], "events.csv")
+        self.stores_file = find_data_file(self.input_dir, ["*store*.csv", "filtered_*.csv", "*店舗*.csv"], "filtered_store_data.csv")
+        self.narrative_file = find_data_file(self.input_dir, ["narrative*.json", "*narrative*.json"], "narrative_data.json")
 
     @property
     def name(self) -> str:
@@ -442,7 +467,8 @@ class StoreInfoTool(BaseTool):
         """店舗情報ツールを初期化する。"""
         self.project_root = Path(__file__).parent.parent.parent.parent
         self.input_dir = self.project_root / "input"
-        self.stores_file = self.input_dir / "filtered_store_data_20251007_141616.csv"
+        # 店舗データファイルを動的に検索
+        self.stores_file = find_data_file(self.input_dir, ["*store*.csv", "filtered_*.csv", "*店舗*.csv"], "filtered_store_data.csv")
 
     @property
     def name(self) -> str:
@@ -542,7 +568,8 @@ class EventInfoTool(BaseTool):
         """イベント情報ツールを初期化する。"""
         self.project_root = Path(__file__).parent.parent.parent.parent
         self.input_dir = self.project_root / "input"
-        self.events_file = self.input_dir / "events.csv"
+        # イベントデータファイルを動的に検索
+        self.events_file = find_data_file(self.input_dir, ["events*.csv", "*event*.csv", "*イベント*.csv"], "events.csv")
 
     @property
     def name(self) -> str:
@@ -590,7 +617,8 @@ class StoreHoursCheckTool(BaseTool):
         """営業時間チェックツールを初期化する。"""
         self.project_root = Path(__file__).parent.parent.parent.parent
         self.input_dir = self.project_root / "input"
-        self.stores_file = self.input_dir / "filtered_store_data_20251007_141616.csv"
+        # 店舗データファイルを動的に検索
+        self.stores_file = find_data_file(self.input_dir, ["*store*.csv", "filtered_*.csv", "*店舗*.csv"], "filtered_store_data.csv")
 
     @property
     def name(self) -> str:
