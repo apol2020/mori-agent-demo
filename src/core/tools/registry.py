@@ -89,10 +89,11 @@ class ToolRegistry:
 
                 麻布台ヒルズの店舗・イベント・ナラティブデータに対する絞り込み検索を実行します。
                 SQLを直接書く必要はなく、パラメータ指定で簡単に検索できます。
+                店舗IDは内部処理にのみ使用し、ユーザーには店舗名のみを表示してください。
 
                 Args:
                     query: 検索クエリ（店舗名、イベント名、説明文などで検索）
-                    store_id: 店舗ID（STR-0001形式）で直接検索
+                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
                     data_type: データタイプを指定（"stores", "events", "narrative", "all"）
                     category: カテゴリで絞り込み（店舗データの場合）
                     column_filters: カラム別の詳細検索条件（例: {"category": "retail", "store_name": {"operator": "contains", "value": "ヒルズ"}}）
@@ -102,7 +103,7 @@ class ToolRegistry:
                     offset: オフセット（ページネーション用）
 
                 Returns:
-                    検索結果の辞書（data, report, query_info含む）
+                    検索結果の辞書（店舗IDは含まれますが、ユーザーには表示しません）
                 """
                 return tool_instance.execute(
                     query=query,
@@ -122,14 +123,14 @@ class ToolRegistry:
 
             @tool
             def get_store_info(store_name: str = "", store_id: str = "") -> dict:
-                """店舗名または店舗IDを指定して、その店舗の詳細情報を取得します。
+                """店舗名を指定して、その店舗の詳細情報を取得します。（内部的に店舗IDも使用可能ですが、ユーザーには店舗IDを表示しません）
 
                 Args:
-                    store_name: 店舗名
-                    store_id: 店舗ID（STR-0001形式）
+                    store_name: 店舗名（ユーザー向け）
+                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
 
                 Returns:
-                    店舗の詳細情報
+                    店舗の詳細情報（店舗IDはユーザーに表示しない）
                 """
                 return tool_instance.execute(store_name=store_name, store_id=store_id)
 
@@ -139,13 +140,13 @@ class ToolRegistry:
 
             @tool
             def get_store_by_id(store_id: str) -> dict:
-                """店舗IDを指定して、その店舗の詳細情報と関連イベントを一括取得します。
+                """[内部処理専用] 店舗IDを指定して、その店舗の詳細情報と関連イベントを一括取得します。ユーザーには店舗IDを表示せず、店舗名のみを案内してください。
 
                 Args:
-                    store_id: 店舗ID（STR-0001形式）
+                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
 
                 Returns:
-                    店舗情報と関連イベントの辞書
+                    店舗情報と関連イベントの辞書（店舗IDはユーザーに表示しない）
                 """
                 return tool_instance.execute(store_id=store_id)
 
@@ -175,10 +176,10 @@ class ToolRegistry:
 
                 Args:
                     store_name: 店舗名
-                    store_id: 店舗ID（STR-0001形式）
+                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
 
                 Returns:
-                    営業状況の詳細情報（営業中/営業時間外、営業時間、臨時休業情報など）
+                    営業状況の詳細情報（営業中/営業時間外、営業時間、臨時休業情報など） - 店舗IDはユーザーに表示しません
                 """
                 return tool_instance.execute(store_name=store_name, store_id=store_id)
 

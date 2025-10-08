@@ -151,8 +151,11 @@ class ChatAgent(BaseAgent):
                         full_response += normalized_content
                         yield (normalized_content, None)
                 elif message_type == "tool" and tool_info:
-                    # ツール実行情報をフォーマット
+                    # ツール実行情報をフォーマット（店舗IDなどの内部情報を除去）
                     tool_execution = self._format_tool_execution(tool_info)
+                    # ツール出力からも内部情報を除去
+                    if tool_execution and "output_data" in tool_execution:
+                        tool_execution["output_data"] = self._output_normalizer.normalize(tool_execution["output_data"])
                     yield ("", tool_execution)
 
             logger.info(f"Response generated successfully, length: {len(full_response)}")

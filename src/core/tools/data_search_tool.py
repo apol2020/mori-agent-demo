@@ -31,7 +31,7 @@ class DataSearchTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "search_azabudai_data: 麻布台ヒルズの店舗・イベント・ナラティブデータに対して条件を指定した絞り込み検索を実行する。店舗IDによる直接検索、カテゴリ別検索、キーワード検索、関連イベント検索などが可能。"
+        return "search_azabudai_data: 麻布台ヒルズの店舗・イベント・ナラティブデータに対して条件を指定した絞り込み検索を実行する。店舗名による検索、カテゴリ別検索、キーワード検索、関連イベント検索などが可能。店舗IDは内部処理専用で、ユーザーには店舗名のみを表示。"
 
     def execute(self, **kwargs: Any) -> Any:
         """データを検索して結果を返す。
@@ -78,7 +78,7 @@ class DataSearchTool(BaseTool):
                             results["events"] = related_events
                     return results
                 else:
-                    return {"error": f"店舗ID「{store_id}」が見つかりませんでした"}
+                    return {"error": "指定された店舗が見つかりませんでした"}
 
             if data_type in ["stores", "all"]:
                 stores_data = self._search_stores(query, category, column_filters)
@@ -450,7 +450,7 @@ class StoreInfoTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "get_store_info: 店舗名または店舗ID（STR-0001形式）を指定して、その店舗の詳細情報を取得する。使用データ: store_id, store_name, description, category, opening_hours, irregular_closures, phone, email, address。営業情報や連絡先の確認に使用。"
+        return "get_store_info: 店舗名を指定して、その店舗の詳細情報を取得する。使用データ: store_name, description, category, opening_hours, irregular_closures, phone, email, address。営業情報や連絡先の確認に使用。店舗IDは内部処理専用で、ユーザーには表示しない。"
 
     def execute(self, **kwargs: Any) -> Any:
         """店舗の詳細情報を取得する。
@@ -503,7 +503,7 @@ class StoreByIdTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "get_store_by_id: 店舗ID（STR-0001形式）を指定して、その店舗の詳細情報と関連イベントを一括取得する。最も効率的な店舗情報取得方法。"
+        return "get_store_by_id: [内部処理専用] 店舗IDを指定して、その店舗の詳細情報と関連イベントを一括取得する。ユーザーには店舗IDを表示せず、店舗名のみを案内する。"
 
     def execute(self, **kwargs: Any) -> Any:
         """店舗IDで店舗と関連データを取得する。
@@ -598,17 +598,17 @@ class StoreHoursCheckTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "check_store_hours: 店舗名を指定して、現在その店舗が営業中かどうかを確認する。使用データ: store_id, store_name, opening_hours, irregular_closures。営業時間と現在時刻を比較して判定し、営業状況、営業時間、臨時休業情報を提供する。"
+        return "check_store_hours: 店舗名を指定して、現在その店舗が営業中かどうかを確認する。使用データ: store_name, opening_hours, irregular_closures。営業時間と現在時刻を比較して判定し、営業状況、営業時間、臨時休業情報を提供する。店舗IDは内部処理専用で、ユーザーには表示しない。"
 
     def execute(self, **kwargs: Any) -> Any:
         """店舗の営業状況を確認する。
 
         Args:
             store_name (str): 店舗名
-            store_id (str, optional): 店舗ID（STR-0001形式）
+            store_id (str, optional): [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
 
         Returns:
-            営業状況の詳細情報
+            営業状況の詳細情報（店舗IDは含まれますが、ユーザーには表示しません）
         """
         store_name = kwargs.get("store_name", "")
         store_id = kwargs.get("store_id", "")
@@ -670,7 +670,7 @@ class StoreHoursCheckTool(BaseTool):
             logger.error(f"Error checking store hours: {e}")
             return {"error": f"営業時間確認中にエラーが発生しました: {str(e)}"}
 
-    def _check_business_status(self, opening_hours: str, current_hour: int, 
+    def _check_business_status(self, opening_hours: str, current_hour: int,
                              current_minute: int, current_weekday: int) -> tuple[bool, str]:
         """営業時間文字列を解析して現在の営業状況を判定する。
 
@@ -692,7 +692,7 @@ class StoreHoursCheckTool(BaseTool):
 
             # 簡易的な営業時間パース（例: "10:00-22:00"）
             import re
-            
+
             # 24時間営業の場合
             if "24時間" in opening_hours or "24hour" in opening_hours.lower():
                 return True, "24時間営業中"
@@ -700,20 +700,20 @@ class StoreHoursCheckTool(BaseTool):
             # 定休日の確認
             weekday_names = ["月", "火", "水", "木", "金", "土", "日"]
             current_day_name = weekday_names[current_weekday]
-            
+
             if f"{current_day_name}曜" in opening_hours and "休" in opening_hours:
                 return False, f"{current_day_name}曜日は定休日"
 
             # 時間形式のパース（HH:MM-HH:MM）
             time_pattern = r'(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})'
             matches = re.findall(time_pattern, opening_hours)
-            
+
             if matches:
                 # 最初にマッチした営業時間を使用
                 start_h, start_m, end_h, end_m = map(int, matches[0])
                 start_minutes = start_h * 60 + start_m
                 end_minutes = end_h * 60 + end_m
-                
+
                 # 深夜営業の場合（翌日まで）
                 if end_minutes <= start_minutes:
                     end_minutes += 24 * 60
