@@ -71,54 +71,6 @@ class ToolRegistry:
 
             return get_current_time
 
-        elif tool_name == "search_azabudai_data":
-
-            @tool
-            def search_azabudai_data(
-                query: str = "",
-                store_id: str = "",
-                data_type: str = "all",
-                category: str = "",
-                column_filters: Optional[dict] = None,
-                sort_by: str = "",
-                sort_order: str = "asc",
-                limit: Optional[int] = None,
-                offset: int = 0
-            ) -> dict:
-                """search_azabudai_data: 麻布台ヒルズデータ検索ツール
-
-                麻布台ヒルズの店舗・イベント・ナラティブデータに対する絞り込み検索を実行します。
-                SQLを直接書く必要はなく、パラメータ指定で簡単に検索できます。
-                店舗IDは内部処理にのみ使用し、ユーザーには店舗名のみを表示してください。
-
-                Args:
-                    query: 検索クエリ（店舗名、イベント名、説明文などで検索）
-                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
-                    data_type: データタイプを指定（"stores", "events", "narrative", "all"）
-                    category: カテゴリで絞り込み（店舗データの場合）
-                    column_filters: カラム別の詳細検索条件（例: {"category": "retail", "store_name": {"operator": "contains", "value": "ヒルズ"}}）
-                    sort_by: ソート対象カラム
-                    sort_order: ソート順（"asc", "desc"）
-                    limit: 取得件数制限
-                    offset: オフセット（ページネーション用）
-
-                Returns:
-                    検索結果の辞書（店舗IDは含まれますが、ユーザーには表示しません）
-                """
-                return tool_instance.execute(
-                    query=query,
-                    store_id=store_id,
-                    data_type=data_type,
-                    category=category,
-                    column_filters=column_filters or {},
-                    sort_by=sort_by,
-                    sort_order=sort_order,
-                    limit=limit,
-                    offset=offset
-                )
-
-            return search_azabudai_data
-
         elif tool_name == "get_store_info":
 
             @tool
@@ -135,22 +87,6 @@ class ToolRegistry:
                 return tool_instance.execute(store_name=store_name, store_id=store_id)
 
             return get_store_info
-
-        elif tool_name == "get_store_by_id":
-
-            @tool
-            def get_store_by_id(store_id: str) -> dict:
-                """[内部処理専用] 店舗IDを指定して、その店舗の詳細情報と関連イベントを一括取得します。ユーザーには店舗IDを表示せず、店舗名のみを案内してください。
-
-                Args:
-                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
-
-                Returns:
-                    店舗情報と関連イベントの辞書（店舗IDはユーザーに表示しない）
-                """
-                return tool_instance.execute(store_id=store_id)
-
-            return get_store_by_id
 
         elif tool_name == "get_event_info":
 
