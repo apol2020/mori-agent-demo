@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read file; case \"$file\" in *.py) make -s format-one-generic format-one-python FILE=\"$file\" ;; *.yaml|*.yml) make -s format-one-generic format-one-yaml FILE=\"$file\" ;; *.toml) make -s format-one-generic format-one-toml FILE=\"$file\" ;; *) make -s format-one-generic FILE=\"$file\" ;; esac; }"
+          }
+        ]
+      }
+    ]
+  }
+}
