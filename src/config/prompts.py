@@ -2,7 +2,8 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Optional
+
 from src.core.tools import tool_registry
 from src.utils.logger import get_logger
 
@@ -14,21 +15,21 @@ except ImportError as e:
 logger = get_logger(__name__)
 
 
-def _load_narrative_data() -> Optional[Dict[str, Any]]:
+def _load_narrative_data() -> Optional[dict[str, Any]]:
     """ナラティブデータを読み込む。"""
     try:
         project_root = Path(__file__).parent.parent.parent
         narrative_file = project_root / "input" / "narrative_data.json"
 
         if narrative_file.exists():
-            with open(narrative_file, 'r', encoding='utf-8') as f:
+            with open(narrative_file, encoding="utf-8") as f:
                 return json.load(f)
     except Exception as e:
         logger.warning(f"Failed to load narrative data: {e}")
     return None
 
 
-def get_agent_system_prompt(user_analysis: Optional[Dict[str, Any]] = None) -> SystemMessage:
+def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> SystemMessage:
     """エージェントのシステムプロンプトを取得する。
 
     このプロンプトは、エージェントの役割、振る舞い、制約を定義する。
@@ -68,10 +69,15 @@ def get_agent_system_prompt(user_analysis: Optional[Dict[str, Any]] = None) -> S
             personalization_text += f"\n\n**ユーザー基本情報:**\n{', '.join(narrative_info)}\n"
 
     if user_analysis and user_analysis.get("analysis_summary"):
-        personalization_text += f"\n**ユーザープロファイル（今回のセッション分析）:**\n{user_analysis['analysis_summary']}\n"
+        personalization_text += (
+            f"\n**ユーザープロファイル（今回のセッション分析）:**\n{user_analysis['analysis_summary']}\n"
+        )
 
     if personalization_text:
-        personalization_text += "\n上記のユーザー特性を踏まえて、年齢・性別・興味に合った店舗や情報を優先的に案内し、パーソナライズした提案を心がけてください。"
+        personalization_text += (
+            "\n上記のユーザー特性を踏まえて、年齢・性別・興味に合った店舗や情報を"
+            "優先的に案内し、パーソナライズした提案を心がけてください。"
+        )
 
     system_message_content = f"""あなたは麻布台ヒルズ総合案内AIアシスタントです。
 
@@ -86,7 +92,21 @@ def get_agent_system_prompt(user_analysis: Optional[Dict[str, Any]] = None) -> S
 7. **パーソナライズ**: チャット履歴を分析してユーザーの興味・嗜好に合った情報を優先的に提供します
 8. **ギフト提案**: 予算やシーンに応じた贈り物の提案を行います
 9. **活動計画**: 1日の過ごし方や活動スケジュールの提案を行います
-10. **店舗ID非表示**: 店舗IDは内部的なデータ検索にのみ使用し、ユーザーには表示しません。ユーザーには店舗名のみを案内してください
+10. **店舗ID非表示**: 店舗IDは内部的なデータ検索にのみ使用し、ユーザーには表示しません。
+    ユーザーには店舗名のみを案内してください
+
+**マークダウン記法のルール（厳守）:**
+- **見出し**: `##` や `###` の後には必ずスペースを入れる（例: `## イベント情報`）
+- **太字**: `**テキスト**` の形式で、記号の内側にテキストを囲む（例: `**開催日**: 10/17`）
+- **リスト**: 複数の項目を列挙する時は `-` で箇条書きにする。各項目は改行して書く
+  ```
+  - 開催日: 10/17（木）
+  - 内容: イベント説明
+  - 場所: 会場名
+  ```
+- **絵文字**: 見出しやリストと組み合わせて使用OK（例: `### 📚 イベント名`）
+- **イタリック**: 単独の `*` は使用禁止（太字の `**` のみ使用可能）
+- **改行**: 見出しの途中や太字の途中で改行しない。1つの要素は1行で完結させる
 
 主要機能:
 - **営業状況確認**: 店舗名を指定して現在営業中かどうかを即座に判定
@@ -109,7 +129,8 @@ def get_agent_system_prompt(user_analysis: Optional[Dict[str, Any]] = None) -> S
 {tools_text}
 
 対話の進め方:
-- **初回または新しいトピック時**: ユーザー分析ツールを使用してチャット履歴から興味・嗜好を分析し、ナラティブデータから基本属性を取得
+- **初回または新しいトピック時**: ユーザー分析ツールを使用してチャット履歴から興味・嗜好を分析し、
+  ナラティブデータから基本属性を取得
 - **ナラティブデータ活用**: データ検索ツールでナラティブデータを取得し、年齢・性別に応じた推奨を提供
 - **店舗案内時**: 分析結果とナラティブデータを活用してユーザーの属性と興味に合った店舗を優先的に案内
 - **営業状況確認**: 店舗名が挙げられた時は営業時間チェックツールで現在の営業状況を確認
