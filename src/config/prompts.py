@@ -1,8 +1,11 @@
 """エージェント用のプロンプトテンプレート設定。"""
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+
+import pytz
 
 from src.core.tools import tool_registry
 from src.utils.logger import get_logger
@@ -29,12 +32,33 @@ def _load_narrative_data() -> Optional[dict[str, Any]]:
     return None
 
 
+def _get_current_time_jst() -> str:
+    """日本時間の現在時刻を取得する。
+
+    Returns:
+        現在時刻の文字列（曜日情報を含む）
+    """
+    try:
+        tz = pytz.timezone("Asia/Tokyo")
+        current_datetime = datetime.now(tz)
+        current_time = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+        # 曜日情報を追加
+        weekdays = {0: "月曜日", 1: "火曜日", 2: "水曜日", 3: "木曜日", 4: "金曜日", 5: "土曜日", 6: "日曜日"}
+        weekday_name = weekdays[current_datetime.weekday()]
+        return f"{current_time} ({weekday_name})"
+    except Exception as e:
+        logger.error(f"Failed to get current time: {e}")
+        return "時刻取得エラー"
+
+
 def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> SystemMessage:
     """エージェントのシステムプロンプトを取得する。
 
     このプロンプトは、エージェントの役割、振る舞い、制約を定義する。
     利用可能なツールはツールレジストリから動的に取得される。
     ユーザー分析結果を反映してパーソナライズされた回答を提供する。
+    現在時刻は自動で取得してシステムプロンプトに埋め込まれる。
 
     Args:
         user_analysis: ユーザーの趣味嗜好分析結果
@@ -42,6 +66,9 @@ def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> S
     Returns:
         SystemMessage: エージェント用のシステムメッセージ
     """
+    # 現在時刻を取得（自動埋め込み）
+    current_time_jst = _get_current_time_jst()
+
     # ツールレジストリからツール情報を取得
     tool_descriptions = tool_registry.get_tool_descriptions()
 
@@ -81,6 +108,8 @@ def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> S
 
     system_message_content = f"""あなたは麻布台ヒルズ総合案内AIアシスタントです。
 
+[現在時刻: {current_time_jst}]
+
 以下の原則に従って対話してください:
 
 1. **専門性**: 麻布台ヒルズの店舗営業時間、ギフト提案、活動計画に特化したサポートを提供します
@@ -96,15 +125,20 @@ def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> S
     ユーザーには店舗名のみを案内してください
 
 **マークダウン記法のルール（厳守）:**
-- **見出し**: `##` や `###` の後には必ずスペースを入れる（例: `## イベント情報`）
+- **見出し**: 必ず`##`または`###`で始め、記号の後には必ずスペースを入れる
+  - 正しい例: `## イベント情報`、`### 📚 イベント名`
+  - 見出しにする場合のみ`##`や`###`を使う
 - **太字**: `**テキスト**` の形式で、記号の内側にテキストを囲む（例: `**開催日**: 10/17`）
+- **通常の文章（重要）**: 見出しではない普通の文章は、絵文字で始まる場合でも`##`や`###`を絶対に付けない
+  - 正しい例: `📅 今週のイベント情報 今週開催されるイベントを調べたところ、2つのイベントが見つかったよ！`
+  - 間違い例: `## 📅 今週のイベント情報` や `📅 今週のイベント情報`を別の行に書く（見出しになる）
+  - **行頭に絵文字がある文章は、必ず文章全体を同じ行に続けて書く**
 - **リスト**: 複数の項目を列挙する時は `-` で箇条書きにする。各項目は改行して書く
   ```
   - 開催日: 10/17（木）
   - 内容: イベント説明
   - 場所: 会場名
   ```
-- **絵文字**: 見出しやリストと組み合わせて使用OK（例: `### 📚 イベント名`）
 - **イタリック**: 単独の `*` は使用禁止（太字の `**` のみ使用可能）
 - **改行**: 見出しの途中や太字の途中で改行しない。1つの要素は1行で完結させる
 

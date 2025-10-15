@@ -37,23 +37,24 @@ class TestChatAgent:
             agent = ChatAgent()
             tools = agent._tools
             assert isinstance(tools, list)
-            assert len(tools) == 2
+            # GetCurrentTimeToolを削除したため、7つのツールが登録されている
+            assert len(tools) == 7
 
-    def test_create_tools_contains_time_tool(self) -> None:
-        """ツールレジストリがtime toolを含むことを確認。"""
+    def test_create_tools_contains_store_info_tool(self) -> None:
+        """ツールレジストリがstore info toolを含むことを確認。"""
         with patch("src.core.agents.chat_agent.AnthropicClient"), patch("src.core.agents.chat_agent.LangChainAdapter"):
             agent = ChatAgent()
             tools = agent._tools
             tool_names = [tool.name for tool in tools]
-            assert "get_current_time" in tool_names
+            assert "get_store_info" in tool_names
 
-    def test_create_tools_contains_multiply_tool(self) -> None:
-        """ツールレジストリがmultiply toolを含むことを確認。"""
+    def test_create_tools_does_not_contain_time_tool(self) -> None:
+        """ツールレジストリがtime toolを含まないことを確認（現在時刻はシステムプロンプトに自動埋め込み）。"""
         with patch("src.core.agents.chat_agent.AnthropicClient"), patch("src.core.agents.chat_agent.LangChainAdapter"):
             agent = ChatAgent()
             tools = agent._tools
             tool_names = [tool.name for tool in tools]
-            assert "multiply" in tool_names
+            assert "get_current_time" not in tool_names
 
     @pytest.mark.asyncio
     async def test_astream_response_yields_content(self) -> None:

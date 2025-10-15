@@ -55,23 +55,7 @@ class ToolRegistry:
         tool_description = tool_instance.description
 
         # ツールインスタンスごとに適切な型注釈付き関数を作成
-        if tool_name == "get_current_time":
-
-            @tool
-            def get_current_time(timezone: str) -> str:
-                """指定されたタイムゾーンの現在時刻を返します。
-
-                Args:
-                    timezone: タイムゾーン名（例: 'Asia/Tokyo', 'America/New_York'）
-
-                Returns:
-                    現在時刻の文字列
-                """
-                return tool_instance.execute(timezone=timezone)
-
-            return get_current_time
-
-        elif tool_name == "get_store_info":
+        if tool_name == "get_store_info":
 
             @tool
             def get_store_info(store_name: str = "", store_id: str = "") -> dict:

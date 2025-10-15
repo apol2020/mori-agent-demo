@@ -28,6 +28,22 @@ def _format_message_content(content: str) -> str:
     # 基本的な改行処理
     content = content.replace("\r\n", "\n").replace("\r", "\n")
 
+    # 絵文字のみで始まる行（見出し記号なし）が見出しとして解釈されるのを防ぐ
+    # 行頭の絵文字の後に改行がある場合、スペースを追加してインライン要素にする
+    # 例: "📅\n今週のイベント" -> "📅 今週のイベント"（同じ行に）
+    # ただし、## や ### で始まる見出しは除外
+    def prevent_emoji_heading(match):
+        emoji = match.group(1)
+        next_text = match.group(2)
+        # 次の行が見出し記号で始まっていなければ、同じ行にまとめる
+        if not next_text.startswith("#"):
+            return f"{emoji} {next_text}"
+        return match.group(0)
+
+    # 絵文字（Unicodeの絵文字範囲）の後に改行がある場合を検出
+    emoji_pattern = r"([\U0001F300-\U0001F9FF\u2600-\u26FF\u2700-\u27BF])\s*\n([^\n#])"
+    content = re.sub(emoji_pattern, prevent_emoji_heading, content)
+
     # ステップ1: マークダウン見出しの修正: # の後にスペースがない場合は追加
     # 例: "##📅" -> "## 📅", "###1." -> "### 1."
     # 見出しの連続した#記号全体を保護しながら処理
