@@ -218,7 +218,11 @@ class EventSearchTool(BaseTool):
             for row in result:
                 row_dict = {}
                 for i, column in enumerate(columns):
-                    row_dict[column] = row[i]
+                    value = row[i]
+                    # datetimeオブジェクトを文字列に変換
+                    if hasattr(value, "isoformat"):
+                        value = value.isoformat()
+                    row_dict[column] = value
                 results.append(row_dict)
 
             return results
