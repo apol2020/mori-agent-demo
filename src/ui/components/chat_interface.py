@@ -28,8 +28,14 @@ def _format_message_content(content: str) -> str:
     # 基本的な改行処理
     content = content.replace("\r\n", "\n").replace("\r", "\n")
 
-    # 絵文字のみで始まる行（見出し記号なし）が見出しとして解釈されるのを防ぐ
-    # 行頭の絵文字の後に改行がある場合、スペースを追加してインライン要素にする
+    # 絵文字が見出しとして解釈されるのを防ぐ処理
+    # ケース1: 絵文字の直後にスペースなしで文字が続く場合、スペースを挿入
+    # 例: "👶お子さま向け" -> "👶 お子さま向け"
+    # これにより、Streamlitのマークダウンパーサーが見出しとして誤解釈するのを防ぐ
+    emoji_direct_pattern = r"([\U0001F300-\U0001F9FF\u2600-\u26FF\u2700-\u27BF])([^\s\n#])"
+    content = re.sub(emoji_direct_pattern, r"\1 \2", content)
+
+    # ケース2: 絵文字の後に改行がある場合、スペースを追加してインライン要素にする
     # 例: "📅\n今週のイベント" -> "📅 今週のイベント"（同じ行に）
     # ただし、## や ### で始まる見出しは除外
     def prevent_emoji_heading(match):
