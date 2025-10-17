@@ -67,6 +67,14 @@ def _format_message_content(content: str) -> str:
     content = re.sub(r"(#{1,6})([^\s#\n])", r"\1 \2", content)
     content = re.sub(r"([^\n#])(#{1,6}\s+)", r"\1\n\n\2", content)
     content = re.sub(r"([^\n])\n(#{1,6}\s+)", r"\1\n\n\2", content)
+
+    # 2-5: 見出しに説明文が含まれている場合は分割
+    # 「### 店舗名 説明文...」→「### 店舗名\n\n説明文...」
+    # カタカナ・漢字の店舗名の後にひらがな・漢字の説明文が続く場合
+    content = re.sub(
+        r"(#{1,6}\s+)([\u30A0-\u30FF\u4E00-\u9FFF\w]+)\s+([ぁ-んァ-ヶ\u4E00-\u9FFF].{10,})", r"\1\2\n\n\3", content
+    )
+
     content = re.sub(r"(#{1,6}\s+[^\n]+)\n(?!\n|#{1,6}|[-*+]\s|\d+\.)", r"\1\n\n", content)
 
     # ステップ3: リストアイテムの処理
@@ -75,9 +83,10 @@ def _format_message_content(content: str) -> str:
     # 3-1: 連続リストマーカーを削除
     content = re.sub(rf"({list_markers}){{2,}}", r"\1", content)
 
-    # 3-2: スペースの後のリストマーカーを改行
-    # NOTE: この処理が「- 項目A - 項目B」を誤って処理している可能性があるため一旦コメントアウト
-    # content = re.sub(rf"([^\n])\s+({list_markers})([^\n])", r"\1\n\2\3", content)
+    # 3-2: 行頭以外の `-` を強制的に改行（改良版）
+    # 「場所: xxx - 営業時間: xxx」や「場所: xxx- 営業時間: xxx」を改行
+    # `-` の前後にスペースがあってもなくても対応
+    content = re.sub(r"([^\n])\s*-\s+([^\s\n-])", r"\1\n- \2", content)
 
     # 3-3: リストマーカー直後にスペース追加（ただし太字の**は除外）
     content = re.sub(rf"^(\s*)({list_markers})(?!\*)([^\s])", r"\1\2 \3", content, flags=re.MULTILINE)
