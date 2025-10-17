@@ -49,12 +49,10 @@ def _format_message_content(content: str) -> str:
     # 行末の単独ハイフン（スペースの後のみ）
     content = re.sub(r"\s+-\s*$", "", content, flags=re.MULTILINE)
 
-    # 0-5: 残った全ての単独 * をエスケープ（意図しない太字を完全に防ぐ）
-    content = content.replace("*", r"\*")
+    # 0-5: 残った単独の * はそのまま残す（保護済みの太字は復元される）
+    # エスケープしない（Streamlitのマークダウンレンダラーに任せる）
 
-    # 0-6: 保護したマークダウンを復元
-    content = content.replace("__PRESERVE_BOLD__", "**")
-    content = content.replace("__PRESERVE_ITALIC__", "*")
+    # 0-6: 保護したリストマーカーのみを復元（太字・斜体は後で復元）
     content = content.replace("__LIST_*__", "*")
     content = content.replace("__LIST_-__", "-")
     content = content.replace("__LIST_+__", "+")
@@ -80,8 +78,8 @@ def _format_message_content(content: str) -> str:
     # 3-2: スペースの後のリストマーカーを改行
     content = re.sub(rf"([^\n])\s+({list_markers})([^\n])", r"\1\n\2\3", content)
 
-    # 3-3: リストマーカー直後にスペース追加
-    content = re.sub(rf"^(\s*)({list_markers})([^\s])", r"\1\2 \3", content, flags=re.MULTILINE)
+    # 3-3: リストマーカー直後にスペース追加（ただし太字の**は除外）
+    content = re.sub(rf"^(\s*)({list_markers})(?!\*)([^\s])", r"\1\2 \3", content, flags=re.MULTILINE)
 
     # 3-4: リスト前に空行追加（コロンの後は除く）
     content = re.sub(rf"([^\n:：])\n({list_markers}\s+)", r"\1\n\n\2", content)
@@ -93,11 +91,32 @@ def _format_message_content(content: str) -> str:
     # ステップ5: データ項目の改行
     content = re.sub(r"(:[^\n]*?[0-9a-zA-Z\-\./]+)([ぁ-んー]{2,})", r"\1\n\n\2", content)
 
+    # ステップ5-2: リスト項目の終了後に別の文章が続く場合に改行を追加
+    # 5-2a: リストマーカーで始まり、ラベル（予約、場所など）+コロンが続く場合
+    # 例: 「・メニュー予約:」→「・メニュー\n\n予約:」
+    content = re.sub(
+        rf"({list_markers}[^\n]+?[^\s])\s*((?:予約|開催|場所|時間|内容|詳細|住所|電話|料金|価格|アクセス|営業)[：:])",
+        r"\1\n\n\2",
+        content,
+    )
+
+    # 5-2b: リストデータの終わりを示す単語（「開催中」「営業中」など）の後に説明文が続く場合
+    # 例: 「・...開催中どちらも...」→「・...開催中\n\nどちらも...」
+    content = re.sub(
+        r"(開催中|営業中|公開中|実施中|販売中|受付中|予約制)([あ-ん]{2,})",
+        r"\1\n\n\2",
+        content,
+    )
+
     # ステップ6: 不要なコロンの削除
     content = re.sub(rf"([^例注備考メモヒント参考])[：:]\s*\n({list_markers}\s+)", r"\1\n\2", content)
 
     # ステップ7: 連続空行を制限
     content = re.sub(r"\n{3,}", "\n\n", content)
+
+    # ステップ8: 最後に保護した太字・斜体を復元
+    content = content.replace("__PRESERVE_BOLD__", "**")
+    content = content.replace("__PRESERVE_ITALIC__", "*")
 
     return content
 
