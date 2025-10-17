@@ -101,6 +101,10 @@ def _format_message_content(content: str) -> str:
     # ステップ5: データ項目の改行
     content = re.sub(r"(:[^\n]*?[0-9a-zA-Z\-\./]+)([ぁ-んー]{2,})", r"\1\n\n\2", content)
 
+    # ステップ5-1: コロン・ラベルの後の `-` を改行
+    # 「おすすめメニュー: -和牛ラグー」→「おすすめメニュー:\n- 和牛ラグー」
+    content = re.sub(r"([\u30A0-\u30FF\u4E00-\u9FFFa-zA-Z]+:)\s*-\s*", r"\1\n- ", content)
+
     # ステップ6: 不要なコロンの削除
     content = re.sub(rf"([^例注備考メモヒント参考])[：:]\s*\n({list_markers}\s+)", r"\1\n\2", content)
 
