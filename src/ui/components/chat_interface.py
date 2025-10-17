@@ -76,7 +76,8 @@ def _format_message_content(content: str) -> str:
     content = re.sub(rf"({list_markers}){{2,}}", r"\1", content)
 
     # 3-2: スペースの後のリストマーカーを改行
-    content = re.sub(rf"([^\n])\s+({list_markers})([^\n])", r"\1\n\2\3", content)
+    # NOTE: この処理が「- 項目A - 項目B」を誤って処理している可能性があるため一旦コメントアウト
+    # content = re.sub(rf"([^\n])\s+({list_markers})([^\n])", r"\1\n\2\3", content)
 
     # 3-3: リストマーカー直後にスペース追加（ただし太字の**は除外）
     content = re.sub(rf"^(\s*)({list_markers})(?!\*)([^\s])", r"\1\2 \3", content, flags=re.MULTILINE)
