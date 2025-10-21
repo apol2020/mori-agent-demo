@@ -153,6 +153,22 @@ class ToolRegistry:
 
             return get_weather
 
+        elif tool_name == "search_products":
+
+            @tool
+            def search_products(sql_query: str) -> dict:
+                """商品データをSQLクエリで検索します。
+
+                Args:
+                    sql_query: 実行するSQLクエリ（SELECT文のみ）
+
+                Returns:
+                    検索結果の辞書（results: 結果リスト, count: 件数）
+                """
+                return tool_instance.execute(sql_query=sql_query)
+
+            return search_products
+
         else:
             # デフォルトの汎用ツール（型注釈なし）
             @tool
