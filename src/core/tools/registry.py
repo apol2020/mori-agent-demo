@@ -137,6 +137,22 @@ class ToolRegistry:
 
             return search_stores
 
+        elif tool_name == "get_weather":
+
+            @tool
+            def get_weather(location: str) -> dict:
+                """指定された地域の1週間分の天気予報を取得します。
+
+                Args:
+                    location: 都市名（例: 東京）
+
+                Returns:
+                    天気情報の辞書（最大7日分の天気、気温）
+                """
+                return tool_instance.execute(location=location)
+
+            return get_weather
+
         else:
             # デフォルトの汎用ツール（型注釈なし）
             @tool
