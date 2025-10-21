@@ -3,7 +3,7 @@
 ---
 
 ## 概要
-エージェントが店舗データ(input/filtered_store_data_食べログ追加したVER2.csv)をSQLで検索できるツールを開発する。
+エージェントが店舗データ(input/filtered_store_data_カテゴリー情報あり.csv)をSQLで検索できるツールを開発する。
 
 ### 目的
 - エージェントが店舗データを自由度高く検索できるようにしたい
@@ -21,7 +21,7 @@
 - エージェントはSQL文を直接記述してツールに渡す
 - セキュリティのため、SELECT文のみ許可し、INSERT/UPDATE/DELETE等は禁止する
 - 検索時のデータのlimitは10に設定するようにツールに設定するプロンプトによって指示する
-- エージェントは店舗データ: input/filtered_store_data_食べログ追加したVER2.csv（テーブル名: stores.csv）を検索可能
+- エージェントは店舗データ: input/filtered_store_data_カテゴリー情報あり.csv（テーブル名: stores.csv）を検索可能
 - 各カラムの名前、データ型、説明を記載する
   - データは今後追加などがあるため、データの数などの変化しそうな要素は説明に含めない
 - エージェントが理解しやすいように、具体的な検索例を5パターン以上含める
@@ -55,7 +55,7 @@
 
 ### 3. データ仕様
 
-#### 店舗データ(input/filtered_store_data_食べログ追加したVER2.csv)のスキーマ
+#### 店舗データ(input/filtered_store_data_カテゴリー情報あり.csv)のスキーマ
 
 | カラム名 | データ型 | 説明 | 例 |
 |---------|---------|------|-----|
@@ -643,7 +643,7 @@ graph TB
 
     subgraph "External Dependencies"
         K[DuckDB]
-        L[stores.csv<br/>input/filtered_store_data_食べログ追加したVER2.csv]
+        L[stores.csv<br/>input/filtered_store_data_カテゴリー情報あり.csv]
         M[events.csv<br/>input/events.csv]
     end
 

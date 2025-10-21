@@ -18,7 +18,7 @@ class StoreSearchTool(BaseTool):
     def __init__(self) -> None:
         """店舗検索ツールを初期化する。"""
         self.project_root = Path(__file__).parent.parent.parent.parent
-        self.stores_file = self.project_root / "input" / "filtered_store_data_食べログ追加したVER2.csv"
+        self.stores_file = self.project_root / "input" / "filtered_store_data_カテゴリー情報あり.csv"
 
     @property
     def name(self) -> str:
