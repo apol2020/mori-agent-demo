@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 
 def _format_message_content(content: str) -> str:
-    """メッセージコンテンツのマークダウンを適切にフォーマットする。
+    """メッセージコンテンツの改行と段落分けを適切にフォーマットする。
 
     Args:
         content: 元のメッセージコンテンツ
@@ -23,115 +23,206 @@ def _format_message_content(content: str) -> str:
     if not content:
         return content
 
-    import re
-
-    # 基本的な改行処理
+    # まず基本的な改行処理を行う
     content = content.replace("\r\n", "\n").replace("\r", "\n")
 
-    # ステップ0: 意図的なマークダウンを保護し、不要な記号を削除
-    # 0-1: 意図的な太字・斜体を一時的に保護
-    content = re.sub(r"\*\*([^\*\n]+?)\*\*", r"__PRESERVE_BOLD__\1__PRESERVE_BOLD__", content)
-    content = re.sub(r"\*([^\*\n]+?)\*", r"__PRESERVE_ITALIC__\1__PRESERVE_ITALIC__", content)
+    # 特定のパターンで改行を強制的に追加
+    import re
 
-    # 0-2: 行頭のリストマーカー（* - +）を保護
-    content = re.sub(r"^(\s*)([\*\-\+])(\s+)", r"\1__LIST_\2__\3", content, flags=re.MULTILINE)
+    # 1. 感嘆符や句読点の後で文章が続く場合に改行を追加
+    content = re.sub(r"([！!？?。])([^\n\s])", r"\1\n\n\2", content)
 
-    # 0-3: 不要なアスタリスクの削除
-    # 句読点の前後の * を削除
-    content = re.sub(r"\*([？。！、，])", r"\1", content)
-    content = re.sub(r"([？。！、，])\*", r"\1", content)
-    # 行末の単独 * を削除
-    content = re.sub(r"\*\s*$", "", content, flags=re.MULTILINE)
+    # 2. 「だね！」「するよ。」などの文章終了パターンの後に改行
+    content = re.sub(r"(だね[！!])([^\n])", r"\1\n\n\2", content)
+    content = re.sub(r"(するよ[。])([^\n])", r"\1\n\n\2", content)
+    content = re.sub(r"(だから[、,])([^\n])", r"\1\n\n\2", content)
 
-    # 0-4: 不要なハイフンの削除（慎重に）
-    # 句読点の直後のハイフン（ただし次が数字でない場合のみ）
-    content = re.sub(r"([？。！])-(?!\d)", r"\1", content)
-    # 行末の単独ハイフン（スペースの後のみ）
-    content = re.sub(r"\s+-\s*$", "", content, flags=re.MULTILINE)
+    # 3. 絵文字の後に改行を追加（絵文字 + テキストの組み合わせ、ただしリスト項目は除く）
+    content = re.sub(r"(🥗|☕|🍰|📍|⏰|💡|🌟|🍽️|🥐|📸)(\s*)([^\n\s-])", r"\1\n\n\3", content)
+    # 絵文字の後のリスト項目は適切に処理
+    content = re.sub(r"(🥗|☕|🍰|📍|⏰|💡|🌟|🍽️|🥐|📸)(\s+)(-\s+)", r"\1\n\2\3", content)
 
-    # 0-5: 残った単独の * はそのまま残す（保護済みの太字は復元される）
-    # エスケープしない（Streamlitのマークダウンレンダラーに任せる）
+    # 4. リストアイテム（-で始まる、数字で始まる）の前に改行を追加（ただし絵文字の直後は除く）
+    content = re.sub(r"([^\n🥐📸🍰🥗])(\s*-\s+)", r"\1\n\n\2", content)
+    # 番号付きリスト（1. 2. 3.など）の前に改行を追加
+    content = re.sub(r"([^\n])(\s*\d+\.\s+)", r"\1\n\n\2", content)
 
-    # 0-6: 保護したリストマーカーのみを復元（太字・斜体は後で復元）
-    content = content.replace("__LIST_*__", "*")
-    content = content.replace("__LIST_-__", "-")
-    content = content.replace("__LIST_+__", "+")
+    # 5. 見出し（##や###）の前後に改行を追加
+    content = re.sub(r"([^\n])(#+\s+)", r"\1\n\n\2", content)
+    content = re.sub(r"(#+\s+[^\n]+)([^\n])", r"\1\n\n\2", content)
 
-    # ステップ1: 絵文字の後の処理
-    # 絵文字の後にゼロ幅スペースを追加してマークダウン誤解釈を防ぐ
-    emoji_pattern = r"([\U0001F300-\U0001F9FF\u2600-\u26FF\u2700-\u27BF])\s*"
-    zero_width_space = "\u200b"
-    content = re.sub(emoji_pattern, r"\1" + zero_width_space + " ", content)
+    # 6. 「例えば：」「現在」「麻布台ヒルズ」などの重要なキーワードの前に改行
+    important_keywords = [
+        r"(例えば：)",
+        r"(現在[^\n]{1,10}だから)",
+        r"(麻布台ヒルズ)",
+        r"(分析結果から)",
+        r"(予算の希望)",
+        r"(具体的に)",
+    ]
 
-    # ステップ2: マークダウン見出しの修正
-    content = re.sub(r"(#{1,6})([^\s#\n])", r"\1 \2", content)
-    content = re.sub(r"([^\n#])(#{1,6}\s+)", r"\1\n\n\2", content)
-    content = re.sub(r"([^\n])\n(#{1,6}\s+)", r"\1\n\n\2", content)
+    for pattern in important_keywords:
+        content = re.sub(r"([^\n])" + pattern, r"\1\n\n\2", content)
 
-    # 2-5: 見出しに説明文が含まれている場合は分割
-    # 「### 店舗名 説明文...」→「### 店舗名\n\n説明文...」
-    # カタカナ・漢字の店舗名の後にひらがな・漢字の説明文が続く場合
-    content = re.sub(
-        r"(#{1,6}\s+)([\u30A0-\u30FF\u4E00-\u9FFF\w]+)\s+([ぁ-んァ-ヶ\u4E00-\u9FFF].{10,})", r"\1\2\n\n\3", content
-    )
+    # 7. 特定の文字列パターンの後に改行を追加（ただしリスト項目の一部を除く）
+    patterns_for_newline = [
+        r"(あなたにぴったりのランチスタイル：)",
+        r"(カフェスタイルランチ)",
+        r"(スイーツも楽しめるお店)",
+        r"(提案するよ)",
+        r"(タイミングだね)",
+        r"(おすすめ：)",
+        r"(対応してるよ！)",
+        r"(できるよ！)",
+        r"(チェックできるよ！)",
+        r"(探してみる！)",
+        r"(調べてみるね！)",
+        r"(見つかったよ！)",
+        r"(開催中)",
+        r"(スポット（現在\d+:\d+）)",
+    ]
 
-    content = re.sub(r"(#{1,6}\s+[^\n]+)\n(?!\n|#{1,6}|[-*+]\s|\d+\.)", r"\1\n\n", content)
+    for pattern in patterns_for_newline:
+        content = re.sub(pattern + r"([^\n])", r"\1\n\2", content)
 
-    # ステップ3: リストアイテムの処理
-    list_markers = r"[-*+・]"
+    # 8. 長い文章を適切に分割（50文字以上の行）
+    lines = content.split("\n")
+    processed_lines = []
 
-    # 3-1: 連続リストマーカーを削除
-    content = re.sub(rf"({list_markers}){{2,}}", r"\1", content)
+    for line in lines:
+        line = line.strip()
+        if len(line) > 80 and "。" in line:
+            # 句点で文章を分割
+            sentences = line.split("。")
+            for i, sentence in enumerate(sentences):
+                if sentence.strip():
+                    if i < len(sentences) - 1:
+                        processed_lines.append(sentence.strip() + "。")
+                    else:
+                        processed_lines.append(sentence.strip())
+        else:
+            processed_lines.append(line)
 
-    # 3-2: 行頭以外の `-` を強制的に改行（改良版）
-    # 「場所: xxx - 営業時間: xxx」や「場所: xxx- 営業時間: xxx」を改行
-    # `-` の前後にスペースがあってもなくても対応
-    content = re.sub(r"([^\n])\s*-\s+([^\s\n-])", r"\1\n- \2", content)
+    # 9. 視覚的な改善: カテゴリ見出しと絵文字の追加
+    enhanced_lines = []
+    for line in processed_lines:
+        line = line.strip()
+        if line:
+            # カテゴリ見出しに絵文字と太字を追加
+            if re.match(
+                r"^(トレンディ[&＆]おしゃれ系|ヘルシー志向|気軽に楽しめる|ベーカリー[・･]カフェ系|スイーツ[・･]デザート系|デリ[・･]軽食系)",
+                line,
+            ):
+                # 適切な絵文字を選択
+                if "トレンディ" in line or "おしゃれ" in line:
+                    line = f"✨ **{line}**"
+                elif "ヘルシー" in line:
+                    line = f"🥗 **{line}**"
+                elif "気軽" in line:
+                    line = f"😊 **{line}**"
+                elif "ベーカリー" in line or "カフェ系" in line:
+                    line = f"🥐 **{line}**"
+                elif "スイーツ" in line or "デザート" in line:
+                    line = f"🍰 **{line}**"
+                elif "デリ" in line or "軽食" in line:
+                    line = f"🥗 **{line}**"
 
-    # 3-3: リストマーカー直後にスペース追加（ただし太字の**は除外）
-    content = re.sub(rf"^(\s*)({list_markers})(?!\*)([^\s])", r"\1\2 \3", content, flags=re.MULTILINE)
+            # 質問部分を強調
+            elif re.match(r"^(具体的にどんな|例えば：|好みを教えて|どんな気分|それとも|どのお店が)", line):
+                line = f"💭 **{line}**"
 
-    # 3-4: リスト前に空行追加（コロンの後は除く）
-    content = re.sub(rf"([^\n:：])\n({list_markers}\s+)", r"\1\n\n\2", content)
+            # 見出し・カテゴリ部分を強調
+            elif re.match(r"^(今すぐ行けそうなスポット|仕事の合間)", line):
+                line = f"🎯 **{line}**"
 
-    # ステップ4: 長文の改行処理
-    # 句読点の後に100文字以上続く場合、改行を追加
-    content = re.sub(r"([。！？])([^\n。！？]{100,})", r"\1\n\n\2", content)
+            # 現在時刻などの情報を強調
+            elif re.match(r"^現在", line):
+                line = f"⏰ {line}"
 
-    # ステップ5: データ項目の改行
-    content = re.sub(r"(:[^\n]*?[0-9a-zA-Z\-\./]+)([ぁ-んー]{2,})", r"\1\n\n\2", content)
+            # 麻布台ヒルズの情報を強調
+            elif "麻布台ヒルズ" in line:
+                line = f"🏢 {line}"
 
-    # ステップ5-1: コロン・ラベルの後の `-` を改行
-    # 「おすすめメニュー: -和牛ラグー」→「おすすめメニュー:\n- 和牛ラグー」
-    content = re.sub(r"([\u30A0-\u30FF\u4E00-\u9FFFa-zA-Z]+:)\s*-\s*", r"\1\n- ", content)
+            # 番号付きリストの処理
+            elif re.match(r"^\d+\.\s+", line):
+                # 番号付きリストアイテムの処理
+                number_match = re.match(r"^(\d+\.\s+)(.+)", line)
+                if number_match:
+                    number_part = number_match.group(1)
+                    item_text = number_match.group(2)
 
-    # ステップ5-2: 絵文字の後にラベルや文章が続く場合、改行
-    # 「💰 予算にピッタリのメニュー」→「💰\n\n予算にピッタリのメニュー」
-    # 「2,500円 🍂 今だけの秋限定メニュー」→「2,500円 🍂\n\n今だけの秋限定メニュー」
-    content = re.sub(
-        r"([\U0001F300-\U0001F9FF\u2600-\u26FF\u2700-\u27BF\u200b]+)\s+([\u30A0-\u30FF\u4E00-\u9FFFぁ-ん]{2,})",
-        r"\1\n\n\2",
-        content,
-    )
+                    # 絵文字がない場合は内容に応じて追加
+                    if not re.match(r"^[🏢🧁☕🥤📸🥙🍰🥗]", item_text):
+                        if "マーケット" in item_text or "ヒルズ" in item_text:
+                            line = f"{number_part}🏢 {item_text}"
+                        elif "チーズケーキ" in item_text or "スイーツ" in item_text or "モンブラン" in item_text:
+                            line = f"{number_part}🧁 {item_text}"
+                        elif "カフェ" in item_text or "CAFÉ" in item_text:
+                            line = f"{number_part}☕ {item_text}"
+                        elif "ドリンク" in item_text:
+                            line = f"{number_part}🥤 {item_text}"
+                        else:
+                            line = f"{number_part}🔹 {item_text}"
 
-    # ステップ5-3: 太字の後に文章が続く場合で、文脈が変わっている場合に改行
-    # 「**安心！**開放的な雰囲気」→「**安心！**\n\n開放的な雰囲気」
-    # 感嘆符や句点で終わる太字の後に文章が続く場合のみ
-    content = re.sub(
-        r"(__PRESERVE_BOLD__[^_]+[！。？]__PRESERVE_BOLD__)\s*([ぁ-んァ-ヶ\u4E00-\u9FFF]{2,})", r"\1\n\n\2", content
-    )
+            # リストアイテムに適切な絵文字を追加
+            elif line.startswith("- "):
+                item_text = line[2:].strip()
+                # 既に絵文字がある場合は追加しない
+                if not re.match(r"^[📸🍴👥🥬✨🚶💰🍣🍝🇫🇷🍜☕💴🥖🧁🥙]", item_text):
+                    if "インスタ映え" in item_text or "スタイリッシュ" in item_text or "ペストリー" in item_text:
+                        line = f"📸 {line}"
+                    elif "話題" in item_text or "グルメ" in item_text:
+                        line = f"🍴 {line}"
+                    elif "友達" in item_text or "雰囲気" in item_text:
+                        line = f"👥 {line}"
+                    elif "サラダ" in item_text or "オーガニック" in item_text or "ヘルシー" in item_text:
+                        line = f"🥬 {line}"
+                    elif "美容" in item_text or "美しい" in item_text:
+                        line = f"✨ {line}"
+                    elif "カジュアル" in item_text or "一人" in item_text:
+                        line = f"🚶 {line}"
+                    elif "リーズナブル" in item_text or "ランチセット" in item_text:
+                        line = f"💰 {line}"
+                    elif "和食" in item_text:
+                        line = f"🍣 {line}"
+                    elif "イタリアン" in item_text:
+                        line = f"🍝 {line}"
+                    elif "フレンチ" in item_text:
+                        line = f"🇫🇷 {line}"
+                    elif "アジア料理" in item_text:
+                        line = f"🍜 {line}"
+                    elif "カフェ" in item_text:
+                        line = f"☕ {line}"
+                    elif "予算" in item_text:
+                        line = f"💴 {line}"
+                    elif "パン" in item_text or "サンドイッチ" in item_text or "焼きたて" in item_text:
+                        line = f"🥖 {line}"
+                    elif (
+                        "ケーキ" in item_text
+                        or "タルト" in item_text
+                        or "スイーツ" in item_text
+                        or "季節限定" in item_text
+                    ):
+                        line = f"🧁 {line}"
+                    elif "ドリンク" in item_text or "テイクアウト" in item_text:
+                        line = f"🥤 {line}"
+                    elif "軽食" in item_text or "サンドイッチ" in item_text or "栄養" in item_text:
+                        line = f"🥙 {line}"
 
-    # ステップ6: 不要なコロンの削除
-    content = re.sub(rf"([^例注備考メモヒント参考])[：:]\s*\n({list_markers}\s+)", r"\1\n\2", content)
+            enhanced_lines.append(line)
+        else:
+            # 空行は段落分けとして保持（連続空行を避ける）
+            if enhanced_lines and enhanced_lines[-1] != "":
+                enhanced_lines.append("")
 
-    # ステップ7: 連続空行を制限
-    content = re.sub(r"\n{3,}", "\n\n", content)
+    # 最後に連続する空行を整理
+    result_lines: list[str] = []
+    for line in enhanced_lines:
+        if line == "" and result_lines and result_lines[-1] == "":
+            continue  # 連続する空行をスキップ
+        result_lines.append(line)
 
-    # ステップ8: 最後に保護した太字・斜体を復元
-    content = content.replace("__PRESERVE_BOLD__", "**")
-    content = content.replace("__PRESERVE_ITALIC__", "*")
-
-    return content
+    return "\n".join(result_lines)
 
 
 def render_tool_execution(tool_execution: ToolExecution) -> None:
@@ -177,7 +268,7 @@ def render_chat_message(message: ChatMessage) -> None:
             if part.type == "text":
                 # 改行と段落分けを適切に処理するため、内容を前処理
                 formatted_content = _format_message_content(part.content)
-                # マークダウンとして処理
+                # マークダウンをそのまま表示（見出しやリストが正しく表示される）
                 st.markdown(formatted_content)
             elif part.type == "tool":
                 render_tool_execution(part.tool_execution)
