@@ -55,57 +55,7 @@ class ToolRegistry:
         tool_description = tool_instance.description
 
         # ツールインスタンスごとに適切な型注釈付き関数を作成
-        if tool_name == "get_store_info":
-
-            @tool
-            def get_store_info(store_name: str = "", store_id: str = "") -> dict:
-                """店舗名を指定して、その店舗の詳細情報を取得します。（内部的に店舗IDも使用可能ですが、ユーザーには店舗IDを表示しません）
-
-                Args:
-                    store_name: 店舗名（ユーザー向け）
-                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
-
-                Returns:
-                    店舗の詳細情報（店舗IDはユーザーに表示しない）
-                """
-                return tool_instance.execute(store_name=store_name, store_id=store_id)
-
-            return get_store_info
-
-        elif tool_name == "get_event_info":
-
-            @tool
-            def get_event_info(event_name: str) -> dict:
-                """イベント名を指定して、そのイベントの詳細情報を取得します。
-
-                Args:
-                    event_name: イベント名
-
-                Returns:
-                    イベントの詳細情報
-                """
-                return tool_instance.execute(event_name=event_name)
-
-            return get_event_info
-
-        elif tool_name == "check_store_hours":
-
-            @tool
-            def check_store_hours(store_name: str = "", store_id: str = "") -> dict:
-                """店舗名を指定して、現在その店舗が営業中かどうかを確認します。
-
-                Args:
-                    store_name: 店舗名
-                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
-
-                Returns:
-                    営業状況の詳細情報（営業中/営業時間外、営業時間、臨時休業情報など） - 店舗IDはユーザーに表示しません
-                """
-                return tool_instance.execute(store_name=store_name, store_id=store_id)
-
-            return check_store_hours
-
-        elif tool_name == "search_events":
+        if tool_name == "search_events":
 
             @tool
             def search_events(sql_query: str) -> dict:
