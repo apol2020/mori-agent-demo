@@ -15,7 +15,7 @@
 
 ### 要件
 - 既存のイベントデータ検索ツールを参考にする
-- 共通化できる部分は共通化する
+- EventSearchToolと同じパターンで実装する（BaseTool直接継承、独立実装）
 - 既存のツールに習って検索ツールを追加する(完全に新しい機能を追加しようとしない)
 - DuckDBを使用してSELECT文による検索を実現する（既存ツールと同様）
 - エージェントはSQL文を直接記述してツールに渡す
@@ -796,6 +796,38 @@ SELECT * FROM 'stores.csv' WHERE Biz_Entertainment_Available = 'TRUE'
 | "ペット同伴可能な店舗" | `SELECT * FROM 'stores.csv' WHERE pets_allowed = 'TRUE' LIMIT 10` |
 | "カフェを探して" | `SELECT * FROM 'stores.csv' WHERE category = 'cafe' LIMIT 10` |
 | "イベントを開催している店舗" | `SELECT store_name, store_exclusive_events FROM 'stores.csv' WHERE store_exclusive_events != '' LIMIT 10` |
+
+### 営業時間の判定メカニズム
+
+店舗の営業時間判定は以下の仕組みで実現されています：
+
+#### 実装方法
+- **システムプロンプトに現在時刻を埋め込み**: エージェントのシステムプロンプト（`src/config/prompts.py`）に現在時刻が含まれています
+- **LLMが判定**: エージェントは`search_stores`ツールで取得した`opening_hours`カラム（JSON形式）と、システムプロンプト内の現在時刻を比較して営業中かどうかを判定します
+- **専用ツール不要**: 営業時間チェック専用のツール（check_store_hoursなど）は存在しません
+
+#### システムプロンプトの該当箇所
+`src/config/prompts.py`の120-123行目：
+```
+6. **営業時間確認**: 店舗の営業状況を確認する際は、search_storesツールでopening_hoursカラムを取得し、
+   現在時刻（システムに表示されている[現在時刻]を参照）と比較して営業中かどうかを判定してください。
+   opening_hoursはJSON形式で格納されています。
+```
+
+#### opening_hoursのデータ形式
+```json
+{
+  "monday": [{"open": "10:00", "close": "20:00"}],
+  "tuesday": [{"open": "10:00", "close": "20:00"}],
+  ...
+}
+```
+
+#### 動作フロー
+1. ユーザーが「今営業している店舗を探して」と質問
+2. エージェントが`search_stores`ツールで店舗データを取得
+3. 取得した`opening_hours`をシステムプロンプト内の現在時刻と比較
+4. 営業中かどうかを判定して回答
 
 ### パフォーマンス考慮事項
 
