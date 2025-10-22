@@ -1,0 +1,86 @@
+cookie:
+  expiry_days: 1
+  key: some_signature_key
+  name: some_cookie_name
+credentials:
+  usernames:
+    ID001:
+      email: test001@example.com
+      name: test001
+      password: $2b$12$7kAFnfjrl95K98tkdX/1pu8qKuXYR9qRlaWa5zgNEsJSXMLnaUlEi
+    ID002:
+      email: test002@example.com
+      name: test002
+      password: $2b$12$ukv1UcD44FYmlww2iV5vVeKLY06bhWRDC8GlJSa.VugEWa9kPU0FC
+    ID003:
+      email: test003@example.com
+      name: test003
+      password: $2b$12$/4TK32zM3syafLLiSqW1Huz/DhGQESLamsTlQdM4NftuxKbfHzngy
+    ID004:
+      email: test004@example.com
+      name: test004
+      password: $2b$12$JZTnmzokVLb2CJ1RUhkNwu743U.x8wfZ/E/1PCM3p9enkziIHDKIO
+    ID005:
+      email: test005@example.com
+      name: test005
+      password: $2b$12$zrHE.vCIgLrD..ZDe4Q1k.jyeAGqhvYC3cEuOF/61Ck8lod9gZ6ja
+    ID006:
+      email: test006@example.com
+      name: test006
+      password: $2b$12$mfgidmMXMYJfb5WOoxOPweWBNoxg1cZ2aDUEsEVa69i5Nyrt0Xb92
+    ID007:
+      email: test007@example.com
+      name: test007
+      password: $2b$12$jyiJoLEOPuvGZzLoIjuj1.37ByH0D.mS761Hmg6eQW1zsbgOQXD/G
+    ID008:
+      email: test008@example.com
+      name: test008
+      password: $2b$12$UAKd.FMKBVkdvX.FMy1QC.YvCGqM9IirjNNCc1VcBRJASRodPy4x.
+    ID009:
+      email: test009@example.com
+      name: test009
+      password: $2b$12$QdzHenbZrsu2IC2TFp4s/u.AIGj/BCDE/yKi8zrABZEbrof4q.WoK
+    ID010:
+      email: test010@example.com
+      name: test010
+      password: $2b$12$3IvNtNTVUTEdg/fRYGtsmeBZ9LLMF5mK4GWIUI06xnCeAUErIy.aW
+    ID011:
+      email: test011@example.com
+      name: test011
+      password: $2b$12$5btFoDOcZMVBD6jD2tYSTeKxNMdXCagLH0UDEjaOXGNuaORN61kw6
+    ID012:
+      email: test012@example.com
+      name: test012
+      password: $2b$12$fZ87nlBBChi6zfWZoAWXher8LAujTYNafXtMF0WRDf1uArj.sUcsK
+    ID013:
+      email: test013@example.com
+      name: test013
+      password: $2b$12$0Qoi7pAFRt8Kin5I5Y4nTOFSIS4OLFCjWLjNfMqKwZWdFciZt0Mg6
+    ID014:
+      email: test014@example.com
+      name: test014
+      password: $2b$12$IN8gL6oN0yfX9DV7lk6r7unXtI/TwatM7c5KmGhqlWbsDg.7KENwy
+    ID015:
+      email: test015@example.com
+      name: test015
+      password: $2b$12$vBcA05pkk.ew.ENSexW3ju16hsfq1BOxBlgd9186mE2fGWC/oYToK
+    ID016:
+      email: test016@example.com
+      name: test016
+      password: $2b$12$dQDqkLDm8emQnkBBVpp0Nupzqll.3YfP7JpgSgSfbMCOBuhwwNa4S
+    ID017:
+      email: test017@example.com
+      name: test017
+      password: $2b$12$vu19C.4WLGKNgXoCdcNHE.myGI4d4x29w4PELKdb5B/FzUv4gWKUC
+    ID018:
+      email: test018@example.com
+      name: test018
+      password: $2b$12$goREZ/xAqonAnyhAKCk2w.aGbmJhROs3LnzJyJubLGt/L9AYLj9va
+    ID019:
+      email: test019@example.com
+      name: test019
+      password: $2b$12$Aq3t37SLheONLuIVC11Vb.xPdFrDip1DIZYeTPUZykkII5ftwibUG
+    ID020:
+      email: test020@example.com
+      name: test020
+      password: $2b$12$jKFicbxdLMEPv4gRhEyje.wtJCRsX9QCyrp3mZsEdI7rpwWMHHnMi
