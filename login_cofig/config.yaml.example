@@ -1,0 +1,11 @@
+cookie:
+  expiry_days: 1
+  key: some_signature_key  # Change this to a random string
+  name: some_cookie_name
+credentials:
+  usernames:
+    # Example user structure:
+    # user_id:
+    #   email: user@example.com
+    #   name: username
+    #   password: hashed_password_here
