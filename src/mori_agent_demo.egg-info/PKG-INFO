@@ -18,6 +18,7 @@ Requires-Dist: langchain-community>=0.3.0
 Requires-Dist: langgraph>=0.2.0
 Requires-Dist: anthropic>=0.39.0
 Requires-Dist: pytz>=2023.3
+Requires-Dist: duckdb>=1.0.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.4.0; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"

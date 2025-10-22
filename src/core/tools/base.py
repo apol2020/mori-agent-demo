@@ -2,6 +2,7 @@
 
 import json
 from abc import ABC, abstractmethod
+from datetime import date, datetime
 from typing import Any
 
 
@@ -25,6 +26,19 @@ class BaseTool(ABC):
         """指定されたパラメータでツールを実行する。"""
         pass
 
+    def _json_serializer(self, obj: Any) -> str:
+        """JSON非対応の型を文字列に変換するヘルパー。
+
+        Args:
+            obj: 変換対象のオブジェクト
+
+        Returns:
+            ISO形式の文字列（datetime/date）または文字列表現
+        """
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return str(obj)
+
     def format_input(self, **kwargs: Any) -> str:
         """ツールの入力をフォーマットする。
 
@@ -35,7 +49,7 @@ class BaseTool(ABC):
             フォーマットされた入力文字列（デフォルトはJSON形式）
         """
         try:
-            return json.dumps(kwargs, ensure_ascii=False, indent=2)
+            return json.dumps(kwargs, ensure_ascii=False, indent=2, default=self._json_serializer)
         except Exception:
             return str(kwargs)
 
@@ -50,7 +64,7 @@ class BaseTool(ABC):
         """
         if isinstance(output, (dict, list)):
             try:
-                return json.dumps(output, ensure_ascii=False, indent=2)
+                return json.dumps(output, ensure_ascii=False, indent=2, default=self._json_serializer)
             except Exception:
                 return str(output)
         return str(output)

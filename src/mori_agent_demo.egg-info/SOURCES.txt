@@ -19,6 +19,7 @@ src/core/tools/__init__.py
 src/core/tools/activity_planner_tool.py
 src/core/tools/base.py
 src/core/tools/data_search_tool.py
+src/core/tools/event_search_tool.py
 src/core/tools/gift_recommendation_tool.py
 src/core/tools/registry.py
 src/core/tools/store_hours_tool.py

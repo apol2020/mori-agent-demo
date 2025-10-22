@@ -55,71 +55,7 @@ class ToolRegistry:
         tool_description = tool_instance.description
 
         # ツールインスタンスごとに適切な型注釈付き関数を作成
-        if tool_name == "get_current_time":
-
-            @tool
-            def get_current_time(timezone: str) -> str:
-                """指定されたタイムゾーンの現在時刻を返します。
-
-                Args:
-                    timezone: タイムゾーン名（例: 'Asia/Tokyo', 'America/New_York'）
-
-                Returns:
-                    現在時刻の文字列
-                """
-                return tool_instance.execute(timezone=timezone)
-
-            return get_current_time
-
-        elif tool_name == "search_azabudai_data":
-
-            @tool
-            def search_azabudai_data(
-                query: str = "",
-                store_id: str = "",
-                data_type: str = "all",
-                category: str = "",
-                column_filters: Optional[dict] = None,
-                sort_by: str = "",
-                sort_order: str = "asc",
-                limit: Optional[int] = None,
-                offset: int = 0
-            ) -> dict:
-                """search_azabudai_data: 麻布台ヒルズデータ検索ツール
-
-                麻布台ヒルズの店舗・イベント・ナラティブデータに対する絞り込み検索を実行します。
-                SQLを直接書く必要はなく、パラメータ指定で簡単に検索できます。
-                店舗IDは内部処理にのみ使用し、ユーザーには店舗名のみを表示してください。
-
-                Args:
-                    query: 検索クエリ（店舗名、イベント名、説明文などで検索）
-                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
-                    data_type: データタイプを指定（"stores", "events", "narrative", "all"）
-                    category: カテゴリで絞り込み（店舗データの場合）
-                    column_filters: カラム別の詳細検索条件（例: {"category": "retail", "store_name": {"operator": "contains", "value": "ヒルズ"}}）
-                    sort_by: ソート対象カラム
-                    sort_order: ソート順（"asc", "desc"）
-                    limit: 取得件数制限
-                    offset: オフセット（ページネーション用）
-
-                Returns:
-                    検索結果の辞書（店舗IDは含まれますが、ユーザーには表示しません）
-                """
-                return tool_instance.execute(
-                    query=query,
-                    store_id=store_id,
-                    data_type=data_type,
-                    category=category,
-                    column_filters=column_filters or {},
-                    sort_by=sort_by,
-                    sort_order=sort_order,
-                    limit=limit,
-                    offset=offset
-                )
-
-            return search_azabudai_data
-
-        elif tool_name == "get_store_info":
+        if tool_name == "get_store_info":
 
             @tool
             def get_store_info(store_name: str = "", store_id: str = "") -> dict:
@@ -135,22 +71,6 @@ class ToolRegistry:
                 return tool_instance.execute(store_name=store_name, store_id=store_id)
 
             return get_store_info
-
-        elif tool_name == "get_store_by_id":
-
-            @tool
-            def get_store_by_id(store_id: str) -> dict:
-                """[内部処理専用] 店舗IDを指定して、その店舗の詳細情報と関連イベントを一括取得します。ユーザーには店舗IDを表示せず、店舗名のみを案内してください。
-
-                Args:
-                    store_id: [内部処理専用] 店舗ID（STR-0001形式） - ユーザーには非表示
-
-                Returns:
-                    店舗情報と関連イベントの辞書（店舗IDはユーザーに表示しない）
-                """
-                return tool_instance.execute(store_id=store_id)
-
-            return get_store_by_id
 
         elif tool_name == "get_event_info":
 
@@ -184,6 +104,70 @@ class ToolRegistry:
                 return tool_instance.execute(store_name=store_name, store_id=store_id)
 
             return check_store_hours
+
+        elif tool_name == "search_events":
+
+            @tool
+            def search_events(sql_query: str) -> dict:
+                """イベントデータをSQLクエリで検索します。
+
+                Args:
+                    sql_query: 実行するSQLクエリ（SELECT文のみ）
+
+                Returns:
+                    検索結果の辞書（results: 結果リスト, count: 件数）
+                """
+                return tool_instance.execute(sql_query=sql_query)
+
+            return search_events
+
+        elif tool_name == "search_stores":
+
+            @tool
+            def search_stores(sql_query: str) -> dict:
+                """店舗データをSQLクエリで検索します。
+
+                Args:
+                    sql_query: 実行するSQLクエリ（SELECT文のみ）
+
+                Returns:
+                    検索結果の辞書（results: 結果リスト, count: 件数）
+                """
+                return tool_instance.execute(sql_query=sql_query)
+
+            return search_stores
+
+        elif tool_name == "get_weather":
+
+            @tool
+            def get_weather(location: str) -> dict:
+                """指定された地域の1週間分の天気予報を取得します。
+
+                Args:
+                    location: 都市名（例: 東京）
+
+                Returns:
+                    天気情報の辞書（最大7日分の天気、気温）
+                """
+                return tool_instance.execute(location=location)
+
+            return get_weather
+
+        elif tool_name == "search_products":
+
+            @tool
+            def search_products(sql_query: str) -> dict:
+                """商品データをSQLクエリで検索します。
+
+                Args:
+                    sql_query: 実行するSQLクエリ（SELECT文のみ）
+
+                Returns:
+                    検索結果の辞書（results: 結果リスト, count: 件数）
+                """
+                return tool_instance.execute(sql_query=sql_query)
+
+            return search_products
 
         else:
             # デフォルトの汎用ツール（型注釈なし）
