@@ -28,10 +28,15 @@ class EventSearchTool(BaseTool):
     @property
     def description(self) -> str:
         """ツールの説明。"""
-        return """search_events: イベントデータをSQLクエリで検索します。
+        return """search_events: イベントデータと期間限定商品をSQLクエリで検索します。
+
+【対象データ】
+このツールで検索できるのは以下のデータです:
+- イベント情報（展示会、キャンペーン、ワークショップなど）
+- 期間限定商品（イベント期間中のみ販売される商品や限定キャンペーン商品）
 
 【使用方法】
-- SQLクエリを指定してイベント情報を検索できます
+- SQLクエリを指定してイベント・期間限定商品情報を検索できます
 - FROM句には 'events.csv' を指定してください
 - SELECT文のみ使用可能です（INSERT/UPDATE/DELETE等は使用不可）
 
@@ -44,10 +49,10 @@ class EventSearchTool(BaseTool):
 テーブル名: events.csv
 
 カラム:
-- event_name (TEXT): イベント名
-- description (TEXT): イベントの説明
-- date_time (TEXT): 開催日時（YYYY-MM-DD形式または"開始日/終了日"形式）
-- location (TEXT): 開催場所（JSON形式: {"venue": "会場名", "address": "住所"}）
+- event_name (TEXT): イベント名/期間限定商品名
+- description (TEXT): イベント・商品の説明
+- date_time (TEXT): 開催日時・販売期間（YYYY-MM-DD形式または"開始日/終了日"形式）
+- location (TEXT): 開催場所・販売場所（JSON形式: {"venue": "会場名", "address": "住所"}）
 - capacity (TEXT): 定員
 - source_url (TEXT): 情報元URL
 - extracted_at (TEXT): データ抽出日時
@@ -58,19 +63,29 @@ class EventSearchTool(BaseTool):
 - target_audience (TEXT): 対象者（JSON配列形式: ["家族", "子供"]）
 
 【検索例】
-1. イベント名で検索:
+1. イベント名・商品名で検索:
    SELECT * FROM 'events.csv' WHERE event_name LIKE '%BMW%'
 
-2. 無料イベントを検索:
+2. 無料イベント・無料商品を検索:
    SELECT * FROM 'events.csv' WHERE cost LIKE '%"is_free": true%'
 
-3. 特定期間のイベントを検索:
+3. 特定期間のイベント・期間限定商品を検索:
    SELECT * FROM 'events.csv' WHERE date_time LIKE '2025-10%'
 
-4. 複数条件での検索:
+4. 特定会場のイベント・商品を検索:
+   SELECT event_name, description, date_time FROM 'events.csv'
+   WHERE location LIKE '%麻布台%'
+
+5. 複数条件での検索:
    SELECT event_name, date_time, location FROM 'events.csv'
    WHERE description LIKE '%記念%' AND registration_required = 'True'
    ORDER BY date_time
+
+【使用場面】
+- 「期間限定の商品を教えて」→ このツールを使用
+- 「今月のイベントは？」→ このツールを使用
+- 「キャンペーン商品を検索」→ このツールを使用
+- 通常商品の検索 → search_products ツールを使用
 """
 
     def execute(self, **kwargs: Any) -> dict[str, Any]:

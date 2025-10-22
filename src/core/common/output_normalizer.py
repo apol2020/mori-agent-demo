@@ -1,7 +1,7 @@
 """エージェント応答の出力正規化ユーティリティ。"""
 
 import re
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from src.utils.logger import get_logger
 
@@ -64,27 +64,29 @@ class OutputNormalizer:
             内部情報を除去したテキスト
         """
         # 店舗ID関連の説明文を先に除去（より具体的なパターンを先に処理）
-        text = re.sub(r'店舗ID[：:]\s*STR-\d+', '', text)
-        text = re.sub(r'\(STR-\d+\)', '', text)
-        text = re.sub(r'[\(\[]STR-\d+[\)\]]', '', text)
+        text = re.sub(r"店舗ID[：:]\s*STR-\d+", "", text)
+        text = re.sub(r"\(STR-\d+\)", "", text)
+        text = re.sub(r"[\(\[]STR-\d+[\)\]]", "", text)
 
         # store_id フィールドが含まれる場合の処理
-        text = re.sub(r'"store_id":\s*"STR-\d+"[,\s]*', '', text)
-        text = re.sub(r'store_id:\s*STR-\d+[,\s]*', '', text)
+        text = re.sub(r'"store_id":\s*"STR-\d+"[,\s]*', "", text)
+        text = re.sub(r"store_id:\s*STR-\d+[,\s]*", "", text)
 
         # 店舗ID（STR-XXXX形式）を単体で除去（最後に処理）
-        text = re.sub(r'STR-\d+', '', text)
+        text = re.sub(r"STR-\d+", "", text)
 
         # 連続した空白やカンマを整理
-        text = re.sub(r'\s+', ' ', text)
-        text = re.sub(r',\s*,', ',', text)
-        text = re.sub(r',\s*}', '}', text)
-        text = re.sub(r'{\s*,', '{', text)
+        text = re.sub(r"\s+", " ", text)
+        text = re.sub(r",\s*,", ",", text)
+        text = re.sub(r",\s*}", "}", text)
+        text = re.sub(r"{\s*,", "{", text)
 
         return text.strip()
 
     @staticmethod
-    def filter_store_data(data: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    def filter_store_data(
+        data: Union[dict[str, Any], list[dict[str, Any]]],
+    ) -> Union[dict[str, Any], list[dict[str, Any]]]:
         """店舗データから店舗IDを除去する。
 
         Args:
@@ -95,12 +97,11 @@ class OutputNormalizer:
         """
         if isinstance(data, list):
             return [OutputNormalizer._filter_single_store_data(item) for item in data]
-        elif isinstance(data, dict):
-            return OutputNormalizer._filter_single_store_data(data)
-        return data
+        # dataはdict型のみ（Union型の残りの可能性）
+        return OutputNormalizer._filter_single_store_data(data)
 
     @staticmethod
-    def _filter_single_store_data(store_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _filter_single_store_data(store_data: dict[str, Any]) -> dict[str, Any]:
         """単一の店舗データから店舗IDを除去する。
 
         Args:
@@ -109,11 +110,8 @@ class OutputNormalizer:
         Returns:
             店舗IDを除去した店舗データ
         """
-        if not isinstance(store_data, dict):
-            return store_data
-
         filtered_data = store_data.copy()
         # store_idフィールドを除去
-        filtered_data.pop('store_id', None)
+        filtered_data.pop("store_id", None)
 
         return filtered_data
