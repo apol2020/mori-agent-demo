@@ -37,8 +37,9 @@ class TestChatAgent:
             agent = ChatAgent()
             tools = agent._tools
             assert isinstance(tools, list)
-            # 現在4つのツールが登録されている: search_events, search_stores, search_products, get_weather
-            assert len(tools) == 4
+            # 現在5つのツールが登録されている
+            # search_events, search_stores, search_products, get_weather, get_user_profile
+            assert len(tools) == 5
 
     def test_create_tools_contains_store_search_tool(self) -> None:
         """ツールレジストリがstore search toolを含むことを確認。"""

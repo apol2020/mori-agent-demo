@@ -43,15 +43,7 @@ class GetCurrentTimeTool(BaseTool):
             current_time = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
             # 曜日情報を追加
-            weekdays = {
-                0: "月曜日",
-                1: "火曜日",
-                2: "水曜日",
-                3: "木曜日",
-                4: "金曜日",
-                5: "土曜日",
-                6: "日曜日"
-            }
+            weekdays = {0: "月曜日", 1: "火曜日", 2: "水曜日", 3: "木曜日", 4: "金曜日", 5: "土曜日", 6: "日曜日"}
             weekday_name = weekdays[current_datetime.weekday()]
             result = f"{current_time} ({weekday_name})"
 

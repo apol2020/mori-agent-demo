@@ -1,6 +1,5 @@
 """エージェント用のプロンプトテンプレート設定。"""
 
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
@@ -18,17 +17,35 @@ except ImportError as e:
 logger = get_logger(__name__)
 
 
-def _load_narrative_data() -> Optional[dict[str, Any]]:
-    """ナラティブデータを読み込む。"""
+def _get_current_user_profile_id() -> Optional[str]:
+    """現在対話中のユーザーのprofile_idのみを取得する。
+
+    詳細情報（age, gender, narrative等）はget_user_profileツールで取得する。
+    """
     try:
+        import os
+
+        import duckdb
+
         project_root = Path(__file__).parent.parent.parent
-        narrative_file = project_root / "input" / "narrative_data.json"
+        # 環境変数からファイル名を取得（デフォルト: narrative_data.csv）
+        narrative_file_name = os.getenv("NARRATIVE_DATA_FILE", "narrative_data.csv")
+        narrative_file = project_root / "input" / narrative_file_name
 
         if narrative_file.exists():
-            with open(narrative_file, encoding="utf-8") as f:
-                return json.load(f)
+            # DuckDBを使用してCSVからprofile_idのみ取得（最初の1ユーザー）
+            con = duckdb.connect()
+            try:
+                # Note: ファイルパスのみf-stringで埋め込み（SQLインジェクションのリスクなし）
+                query_str = f"SELECT profile_id FROM read_csv_auto('{narrative_file}') LIMIT 1"  # noqa: S608
+                result = con.execute(query_str).fetchone()
+
+                if result:
+                    return str(result[0])
+            finally:
+                con.close()
     except Exception as e:
-        logger.warning(f"Failed to load narrative data: {e}")
+        logger.warning(f"Failed to get profile_id: {e}")
     return None
 
 
@@ -78,37 +95,37 @@ def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> S
     else:
         tools_text = "（現在利用可能なツールはありません）"
 
-    # ナラティブデータを読み込み
-    narrative_data = _load_narrative_data()
+    # 現在対話中のユーザーのprofile_idを取得
+    current_user_profile_id = _get_current_user_profile_id()
 
     # ユーザー分析に基づくパーソナライゼーション情報
     personalization_text = ""
-
-    # ナラティブデータがある場合の情報
-    if narrative_data:
-        narrative_info = []
-        if narrative_data.get("age"):
-            narrative_info.append(f"年齢: {narrative_data['age']}歳")
-        if narrative_data.get("gender"):
-            narrative_info.append(f"性別: {narrative_data['gender']}")
-
-        if narrative_info:
-            personalization_text += f"\n\n**ユーザー基本情報:**\n{', '.join(narrative_info)}\n"
 
     if user_analysis and user_analysis.get("analysis_summary"):
         personalization_text += (
             f"\n**ユーザープロファイル（今回のセッション分析）:**\n{user_analysis['analysis_summary']}\n"
         )
 
-    if personalization_text:
-        personalization_text += (
-            "\n上記のユーザー特性を踏まえて、年齢・性別・興味に合った店舗や情報を"
-            "優先的に案内し、パーソナライズした提案を心がけてください。"
-        )
+    # profile_id情報を構築
+    profile_id_info = ""
+    if current_user_profile_id:
+        profile_id_info = f"""
+[現在対話中のユーザー: {current_user_profile_id}]
+
+**重要**: ユーザーに関する情報が必要な場合は、必ず get_user_profile ツールを使用してください。
+- 対話開始時に一度取得することを推奨します
+- ユーザーが「いつもの店」「よく行く店」「私の好み」「おすすめは？」などと言った場合は必須
+- 使用方法: get_user_profile(profile_id="{current_user_profile_id}")
+- 取得できる情報:
+  * primary_store_name: よく行く店（「いつもの店」として案内可能）
+  * age, gender: 年齢・性別（パーソナライズに活用）
+  * user_type: ユーザータイプ（「特定店舗ロイヤルカスタマー」など）
+  * narrative: 詳細な行動パターンと嗜好性（重要！）
+"""
 
     system_message_content = f"""あなたは麻布台ヒルズ総合案内AIアシスタントです。
 
-[現在時刻: {current_time_jst}]
+[現在時刻: {current_time_jst}]{profile_id_info}
 
 以下の原則に従って対話してください:
 
@@ -198,7 +215,7 @@ def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> S
 - イベントデータ: 開催中・予定のイベント情報
 - 現在時刻: 日本時間での現在日時と曜日
 - 臨時休業情報: 特別休業日や営業時間変更情報
-- ナラティブデータ: ユーザーの基本属性（年齢、性別など）に基づくパーソナライズ情報
+- ユーザープロファイル: get_user_profileツールで取得（年齢、性別、よく行く店、行動パターン等）
 
 利用可能なツール:
 {tools_text}
@@ -228,8 +245,9 @@ def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> S
   * イベント情報の最後に必ず追加: 「※最新の情報は公式サイトでご確認ください」
   * イベントのURLが利用可能な場合は、必ず案内に含める
   * 情報が古い可能性があることをユーザーに認識してもらうため、情報鮮度の表示は必須
-- **ナラティブデータ活用**: ナラティブデータから年齢・性別に応じた推奨を提供
-- **店舗案内時**: ナラティブデータを活用してユーザーの属性と興味に合った店舗を優先的に案内
+- **ユーザープロファイル活用**: get_user_profileツールで取得した年齢・性別・narrativeに応じた推奨を提供
+- **店舗案内時**: ユーザープロファイルを活用してユーザーの属性と興味に合った店舗を優先的に案内
+  * 対話開始時や「おすすめは？」と聞かれた際は、まずget_user_profileで情報を取得してから提案
 - **営業状況確認**: 店舗名が挙げられた時は、search_storesツールでopening_hoursカラムを取得し、
   現在時刻と比較して営業中/営業時間外を判定してください
 - **検索実施**: ユーザーのニーズが明確になったら、検索ツールを使用して条件に合う店舗・イベントを検索
@@ -241,7 +259,7 @@ def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> S
 - **性別に基づく提案**: 女性→美容・アクセサリー重視、男性→実用性・グルメ重視
 - 飲食への興味が高い → レストラン・カフェ情報を詳しく案内
 - 家族連れ → キッズフレンドリーな店舗を優先案内
-- 一人利用 → カウンター席やカジュアルな店舗を提案{personalization_text}
+- 一人利用 → カウンター席やカジュアルな店舗を提案
 """
 
     return SystemMessage(content=system_message_content)

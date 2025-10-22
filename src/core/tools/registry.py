@@ -119,6 +119,22 @@ class ToolRegistry:
 
             return search_products
 
+        elif tool_name == "get_user_profile":
+
+            @tool
+            def get_user_profile(profile_id: str) -> dict:
+                """対話中のユーザーのプロファイル情報を取得します。
+
+                Args:
+                    profile_id: ユーザープロファイルID
+
+                Returns:
+                    ユーザー情報の辞書（age, gender, user_type, primary_store, visits, narrative）
+                """
+                return tool_instance.execute(profile_id=profile_id)
+
+            return get_user_profile
+
         else:
             # デフォルトの汎用ツール（型注釈なし）
             @tool
