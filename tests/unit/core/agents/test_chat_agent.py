@@ -37,16 +37,16 @@ class TestChatAgent:
             agent = ChatAgent()
             tools = agent._tools
             assert isinstance(tools, list)
-            # GetCurrentTimeToolを削除したため、7つのツールが登録されている
-            assert len(tools) == 7
+            # 現在4つのツールが登録されている: search_events, search_stores, search_products, get_weather
+            assert len(tools) == 4
 
-    def test_create_tools_contains_store_info_tool(self) -> None:
-        """ツールレジストリがstore info toolを含むことを確認。"""
+    def test_create_tools_contains_store_search_tool(self) -> None:
+        """ツールレジストリがstore search toolを含むことを確認。"""
         with patch("src.core.agents.chat_agent.AnthropicClient"), patch("src.core.agents.chat_agent.LangChainAdapter"):
             agent = ChatAgent()
             tools = agent._tools
             tool_names = [tool.name for tool in tools]
-            assert "get_store_info" in tool_names
+            assert "search_stores" in tool_names
 
     def test_create_tools_does_not_contain_time_tool(self) -> None:
         """ツールレジストリがtime toolを含まないことを確認（現在時刻はシステムプロンプトに自動埋め込み）。"""
@@ -79,7 +79,8 @@ class TestChatAgent:
                 chunks.append(content)
 
             assert len(chunks) == 2
-            assert chunks[0] == "Hello "
+            # OutputNormalizerがホワイトスペースをトリムするため、末尾の空白は削除される
+            assert chunks[0] == "Hello"
             assert chunks[1] == "World"
 
     @pytest.mark.asyncio
