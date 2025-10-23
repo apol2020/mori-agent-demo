@@ -122,16 +122,15 @@ class ToolRegistry:
         elif tool_name == "get_user_profile":
 
             @tool
-            def get_user_profile(profile_id: str) -> dict:
+            def get_user_profile() -> dict:
                 """対話中のユーザーのプロファイル情報を取得します。
 
-                Args:
-                    profile_id: ユーザープロファイルID
+                パラメータなしで呼び出すと、ログイン中のユーザーの嗜好情報を自動取得します。
 
                 Returns:
-                    ユーザー情報の辞書（age, gender, user_type, primary_store, visits, narrative）
+                    ユーザー情報の辞書（username, profile_id, age, gender, preferences）
                 """
-                return tool_instance.execute(profile_id=profile_id)
+                return tool_instance.execute()
 
             return get_user_profile
 

@@ -38,7 +38,9 @@ def _reset_session(selected_model: str) -> None:
     Args:
         selected_model: 選択されたモデルID
     """
-    st.session_state.agent_service = AgentService(model_id=selected_model)
+    # ログイン中のユーザー名を取得
+    username = st.session_state.get("username")
+    st.session_state.agent_service = AgentService(model_id=selected_model, username=username)
     st.session_state.current_model = selected_model
     st.session_state.current_session_id = str(uuid.uuid4())
     st.session_state.chat_messages = []

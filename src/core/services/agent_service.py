@@ -21,14 +21,16 @@ class AgentService:
         self,
         model_id: str = "claude-sonnet-4-20250514",
         anthropic_client: Optional[AnthropicClient] = None,
+        username: Optional[str] = None,
     ) -> None:
         """エージェントサービスを初期化する。
 
         Args:
             model_id: 使用するモデルID
             anthropic_client: Anthropicクライアントインスタンス（後方互換性のため）
+            username: ログイン中のユーザー名（ナラティブデータのフィルタリングに使用）
         """
-        self._agent = ChatAgent(model_id=model_id, anthropic_client=anthropic_client)
+        self._agent = ChatAgent(model_id=model_id, anthropic_client=anthropic_client, username=username)
 
     async def stream_message(
         self,

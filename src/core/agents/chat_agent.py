@@ -27,16 +27,39 @@ class ChatAgent(BaseAgent):
         self,
         model_id: str = "claude-sonnet-4-20250514",
         anthropic_client: Optional[AnthropicClient] = None,
+        username: Optional[str] = None,
     ) -> None:
         """チャットエージェントを初期化する。
 
         Args:
             model_id: 使用するモデルID
             anthropic_client: Anthropicクライアントインスタンス（後方互換性のため）
+            username: ログイン中のユーザー名（ナラティブデータのフィルタリングに使用）
         """
-        # ツールレジストリからツールを取得
-        self._tools = tool_registry.get_all_tools()
-        self._tool_instances = tool_registry.get_all_tool_instances()
+        # ユーザー名が指定されている場合は専用のツールレジストリを作成
+        if username:
+            from src.core.tools import (
+                EventSearchTool,
+                ProductSearchTool,
+                StoreSearchTool,
+                ToolRegistry,
+                UserProfileTool,
+                WeatherTool,
+            )
+
+            user_tool_registry = ToolRegistry()
+            user_tool_registry.register_tool(EventSearchTool())
+            user_tool_registry.register_tool(StoreSearchTool())
+            user_tool_registry.register_tool(ProductSearchTool())
+            user_tool_registry.register_tool(WeatherTool())
+            user_tool_registry.register_tool(UserProfileTool(username=username))
+            self._tools = user_tool_registry.get_all_tools()
+            self._tool_instances = user_tool_registry.get_all_tool_instances()
+        else:
+            # ユーザー名が指定されていない場合はグローバルレジストリを使用（後方互換性）
+            self._tools = tool_registry.get_all_tools()
+            self._tool_instances = tool_registry.get_all_tool_instances()
+
         self._prompt_template = get_agent_system_prompt()
 
         # LLMファクトリーを使用してLLMインスタンスを作成
