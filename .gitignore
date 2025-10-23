@@ -135,3 +135,10 @@ Thumbs.db
 
 # Project specific
 *.db
+
+# Authentication and sensitive data
+login_cofig/config.yaml
+login_cofig/user_info.csv
+
+# Claude Code local settings
+.claude/settings.local.json
