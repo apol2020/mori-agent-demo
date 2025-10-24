@@ -57,18 +57,22 @@ class EventSearchTool(BaseTool):
 - registration_required (TEXT): 事前登録の要否（"True"または空文字）
 - target_audience (TEXT): 対象者（JSON配列形式: ["家族", "子供"]）
 
+【重要】
+- イベント検索結果には必ずsource_urlカラムを含めてください
+- SELECT *を使用するか、明示的にsource_urlを指定してください
+
 【検索例】
-1. イベント名で検索:
+1. イベント名で検索（URLを含む）:
    SELECT * FROM 'events.csv' WHERE event_name LIKE '%BMW%'
 
-2. 無料イベントを検索:
+2. 無料イベントを検索（URLを含む）:
    SELECT * FROM 'events.csv' WHERE cost LIKE '%"is_free": true%'
 
-3. 特定期間のイベントを検索:
+3. 特定期間のイベントを検索（URLを含む）:
    SELECT * FROM 'events.csv' WHERE date_time LIKE '2025-10%'
 
-4. 複数条件での検索:
-   SELECT event_name, date_time, location FROM 'events.csv'
+4. 複数条件での検索（URLを明示的に指定）:
+   SELECT event_name, date_time, location, source_url FROM 'events.csv'
    WHERE description LIKE '%記念%' AND registration_required = 'True'
    ORDER BY date_time
 """

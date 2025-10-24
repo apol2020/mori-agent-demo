@@ -19,6 +19,7 @@ class StoreSearchTool(BaseTool):
         """店舗検索ツールを初期化する。"""
         self.project_root = Path(__file__).parent.parent.parent.parent
         self.stores_file = self.project_root / "input" / "filtered_store_data_カテゴリー情報あり.csv"
+        self.stores_url_file = self.project_root / "input" / "stores.csv"
 
     @property
     def name(self) -> str:
@@ -74,8 +75,12 @@ class StoreSearchTool(BaseTool):
 - extraction_status (TEXT): データ抽出ステータス（"success"または"error"）
 - error_message (TEXT): エラーメッセージ
 
+【重要】
+- 店舗検索結果には自動的にweb_url（店舗のWebページURL）が追加されます
+- store_idが含まれていればURLが自動的に付与されます
+
 【検索例】
-1. 店舗名で検索:
+1. 店舗名で検索（URLが自動的に追加されます）:
    SELECT * FROM 'stores.csv' WHERE store_name LIKE '%ヒルズ%'
 
 2. カテゴリで検索:
@@ -142,7 +147,10 @@ class StoreSearchTool(BaseTool):
             if len(results) == 0:
                 return {"results": [], "count": 0, "message": "検索条件に一致する店舗が見つかりませんでした"}
 
-            return {"results": results, "count": len(results)}
+            # URL情報を追加
+            results_with_urls = self._add_store_urls(results)
+
+            return {"results": results_with_urls, "count": len(results_with_urls)}
 
         except Exception as e:
             error_msg = f"クエリ実行中にエラーが発生しました: {str(e)}"
@@ -266,3 +274,36 @@ class StoreSearchTool(BaseTool):
             # コネクションをクローズ
             if con:
                 con.close()
+
+    def _add_store_urls(self, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """検索結果に店舗URLを追加する。
+
+        Args:
+            results: 店舗検索結果のリスト
+
+        Returns:
+            URL情報が追加された検索結果のリスト
+        """
+        try:
+            # stores.csvからURL情報を読み込む
+            con = duckdb.connect()
+            # パスはプロジェクト内の固定パスなので安全
+            query = f"SELECT store_id, source FROM read_csv_auto('{str(self.stores_url_file)}')"  # noqa: S608
+            url_data = con.execute(query).fetchall()
+            con.close()
+
+            # store_idをキーとした辞書を作成
+            url_dict = {row[0]: row[1] for row in url_data if row[1]}  # URLが空でないもののみ
+
+            # 各結果にURLを追加
+            for result in results:
+                store_id = result.get("store_id")
+                if store_id and store_id in url_dict:
+                    result["web_url"] = url_dict[store_id]
+
+            return results
+
+        except Exception as e:
+            logger.warning(f"Failed to add store URLs: {str(e)}")
+            # URL追加に失敗しても元の結果を返す
+            return results
