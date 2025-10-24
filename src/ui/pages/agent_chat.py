@@ -289,7 +289,12 @@ def render_agent_chat_page(controls: dict) -> None:
 
     handle_chat_controls(controls)
 
-    if st.session_state.chat_messages:
+    # チャット履歴が空の場合はウェルカムメッセージを表示
+    if not st.session_state.chat_messages:
+        with st.chat_message("assistant"):
+            welcome_message = "こんにちは！今日は何をお手伝いしましょうか？"
+            st.markdown(welcome_message)
+    else:
         render_chat_history(st.session_state.chat_messages)
 
     if user_input := render_chat_input():
