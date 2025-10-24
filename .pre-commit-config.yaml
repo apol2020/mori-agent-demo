@@ -40,4 +40,5 @@ repos:
         args: [--config-file=pyproject.toml, --no-error-summary]
         additional_dependencies:
           - types-pytz
+          - types-PyYAML
         verbose: false

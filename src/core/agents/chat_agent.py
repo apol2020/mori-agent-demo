@@ -60,7 +60,8 @@ class ChatAgent(BaseAgent):
             self._tools = tool_registry.get_all_tools()
             self._tool_instances = tool_registry.get_all_tool_instances()
 
-        self._prompt_template = get_agent_system_prompt()
+        # システムプロンプトにusernameを渡して、正しいユーザーのprofile_idを取得
+        self._prompt_template = get_agent_system_prompt(username=username)
 
         # LLMファクトリーを使用してLLMインスタンスを作成
         from src.infrastructure.llm.llm_factory import create_llm

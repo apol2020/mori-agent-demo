@@ -1,4 +1,5 @@
 import csv
+
 import yaml
 from streamlit_authenticator.utilities.hasher import Hasher
 
@@ -6,14 +7,13 @@ users_csv_path = "login_cofig/user_info.csv"
 config_yaml_path = "login_cofig/config.yaml"
 
 
-
 ## ユーザー設定の一覧が記述されたデータを読み込み
-with open(users_csv_path, "r", encoding="utf-8-sig") as f:
+with open(users_csv_path, encoding="utf-8-sig") as f:
     csvreader = csv.DictReader(f)
     users = list(csvreader)
 
 ## yaml 設定一覧が記述されたデータを読み込み
-with open(config_yaml_path,"r") as f:
+with open(config_yaml_path) as f:
     yaml_data = yaml.safe_load(f)
 
 ## パスワードのハッシュ化

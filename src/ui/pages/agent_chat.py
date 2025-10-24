@@ -29,7 +29,19 @@ def _should_reset_session(selected_model: str) -> bool:
     Returns:
         セッションをリセットすべきならTrue
     """
-    return "current_model" not in st.session_state or st.session_state.current_model != selected_model
+    # モデルが変更された場合はリセット
+    if "current_model" not in st.session_state or st.session_state.current_model != selected_model:
+        return True
+
+    # ログインユーザーが切り替わった場合もリセット（プライバシー保護）
+    current_username = st.session_state.get("username")
+    previous_username = st.session_state.get("previous_username")
+
+    if current_username != previous_username:
+        logger.info(f"User changed from {previous_username} to {current_username}, resetting session")
+        return True
+
+    return False
 
 
 def _reset_session(selected_model: str) -> None:
@@ -40,11 +52,16 @@ def _reset_session(selected_model: str) -> None:
     """
     # ログイン中のユーザー名を取得
     username = st.session_state.get("username")
+
+    # 前回のユーザー名を記録（次回の切り替え検知用）
+    st.session_state.previous_username = username
+
     st.session_state.agent_service = AgentService(model_id=selected_model, username=username)
     st.session_state.current_model = selected_model
     st.session_state.current_session_id = str(uuid.uuid4())
     st.session_state.chat_messages = []
-    logger.info(f"モデルを {selected_model} に変更し、新しいセッションを開始: {st.session_state.current_session_id}")
+    session_id = st.session_state.current_session_id
+    logger.info(f"モデルを {selected_model} に変更し、新しいセッションを開始: {session_id} (user: {username})")
 
 
 def initialize_session_state(selected_model: str) -> None:
@@ -53,7 +70,7 @@ def initialize_session_state(selected_model: str) -> None:
     Args:
         selected_model: 選択されたモデルID
     """
-    # モデルが変更された場合はセッションをリセット
+    # モデルが変更された場合、またはユーザーが切り替わった場合はセッションをリセット
     if _should_reset_session(selected_model):
         _reset_session(selected_model)
 
@@ -67,6 +84,10 @@ def initialize_session_state(selected_model: str) -> None:
 
     if "is_processing" not in st.session_state:
         st.session_state.is_processing = False
+
+    # previous_usernameを初期化（初回ログイン時）
+    if "previous_username" not in st.session_state:
+        st.session_state.previous_username = st.session_state.get("username")
 
 
 def start_new_session() -> None:

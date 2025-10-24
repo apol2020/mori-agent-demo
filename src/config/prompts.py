@@ -17,10 +17,13 @@ except ImportError as e:
 logger = get_logger(__name__)
 
 
-def _get_current_user_profile_id() -> Optional[str]:
+def _get_current_user_profile_id(username: Optional[str] = None) -> Optional[str]:
     """現在対話中のユーザーのprofile_idのみを取得する。
 
     詳細情報（age, gender, narrative等）はget_user_profileツールで取得する。
+
+    Args:
+        username: ログイン中のユーザー名（指定された場合、そのユーザーのprofile_idのみ取得）
     """
     try:
         import os
@@ -33,12 +36,17 @@ def _get_current_user_profile_id() -> Optional[str]:
         narrative_file = project_root / "input" / narrative_file_name
 
         if narrative_file.exists():
-            # DuckDBを使用してCSVからprofile_idのみ取得（最初の1ユーザー）
+            # DuckDBを使用してCSVからprofile_idのみ取得
             con = duckdb.connect()
             try:
-                # Note: ファイルパスのみf-stringで埋め込み（SQLインジェクションのリスクなし）
-                query_str = f"SELECT profile_id FROM read_csv_auto('{narrative_file}') LIMIT 1"  # noqa: S608
-                result = con.execute(query_str).fetchone()
+                if username:
+                    # usernameが指定されている場合、そのユーザーのprofile_idを取得
+                    query_str = f"SELECT profile_id FROM read_csv_auto('{narrative_file}') WHERE username = ? LIMIT 1"  # noqa: S608
+                    result = con.execute(query_str, [username]).fetchone()
+                else:
+                    # usernameが指定されていない場合、最初の1ユーザー（後方互換性）
+                    query_str = f"SELECT profile_id FROM read_csv_auto('{narrative_file}') LIMIT 1"  # noqa: S608
+                    result = con.execute(query_str).fetchone()
 
                 if result:
                     return str(result[0])
@@ -69,7 +77,9 @@ def _get_current_time_jst() -> str:
         return "時刻取得エラー"
 
 
-def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> SystemMessage:
+def get_agent_system_prompt(
+    user_analysis: Optional[dict[str, Any]] = None, username: Optional[str] = None
+) -> SystemMessage:
     """エージェントのシステムプロンプトを取得する。
 
     このプロンプトは、エージェントの役割、振る舞い、制約を定義する。
@@ -79,6 +89,7 @@ def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> S
 
     Args:
         user_analysis: ユーザーの趣味嗜好分析結果
+        username: ログイン中のユーザー名（ナラティブデータのフィルタリングに使用）
 
     Returns:
         SystemMessage: エージェント用のシステムメッセージ
@@ -96,7 +107,7 @@ def get_agent_system_prompt(user_analysis: Optional[dict[str, Any]] = None) -> S
         tools_text = "（現在利用可能なツールはありません）"
 
     # 現在対話中のユーザーのprofile_idを取得
-    current_user_profile_id = _get_current_user_profile_id()
+    current_user_profile_id = _get_current_user_profile_id(username)
 
     # ユーザー分析に基づくパーソナライゼーション情報
     personalization_text = ""
