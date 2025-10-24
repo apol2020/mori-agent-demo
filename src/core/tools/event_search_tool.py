@@ -40,6 +40,11 @@ class EventSearchTool(BaseTool):
 - クエリにLIMIT句がない場合、自動的に LIMIT 10 が追加されます
 - LIMIT句を指定する場合も、10以下に制限されます
 
+【出力形式】
+- 検索結果は、生データ（results）と表形式のMarkdown（table）の両方で返されます
+- 複数イベントを提案する際は、tableフィールドの内容をそのままユーザーに表示してください
+- 表形式では主要な情報（イベント名、日時、開催場所、説明、費用、事前登録、URL等）が見やすく整理されています
+
 【データスキーマ】
 テーブル名: events.csv
 
@@ -84,7 +89,7 @@ class EventSearchTool(BaseTool):
             sql_query (str): 実行するSQLクエリ（SELECT文のみ）
 
         Returns:
-            検索結果の辞書（results: 結果リスト, count: 件数）
+            検索結果の辞書（results: 結果リスト, count: 件数, table: 表形式のMarkdown）
             エラー時は {"error": "エラーメッセージ"}
         """
         sql_query = kwargs.get("sql_query", "")
@@ -111,7 +116,15 @@ class EventSearchTool(BaseTool):
             results = self._execute_duckdb_query(sql_query)
 
             logger.info(f"Query executed successfully: {len(results)} results found")
-            return {"results": results, "count": len(results)}
+
+            # 検索結果が0件の場合、メッセージを追加
+            if len(results) == 0:
+                return {"results": [], "count": 0, "message": "検索条件に一致するイベントが見つかりませんでした"}
+
+            return {
+                "results": results,
+                "count": len(results),
+            }
 
         except Exception as e:
             error_msg = f"クエリ実行中にエラーが発生しました: {str(e)}"
@@ -235,3 +248,94 @@ class EventSearchTool(BaseTool):
             # コネクションをクローズ
             if con:
                 con.close()
+
+    def _generate_table_markdown(self, results: list[dict[str, Any]]) -> str:
+        """検索結果から表形式のMarkdownテーブルを生成する。
+
+        Args:
+            results: イベント検索結果のリスト
+
+        Returns:
+            表形式のMarkdownテーブル文字列
+        """
+        if not results:
+            return ""
+
+        # 表示する主要カラムを定義（優先度順）
+        priority_columns = [
+            "event_name",
+            "date_time",
+            "location",
+            "description",
+            "cost",
+            "registration_required",
+            "source_url",
+        ]
+
+        # 実際に存在するカラムのみを使用
+        all_columns = list(results[0].keys())
+        display_columns = [col for col in priority_columns if col in all_columns]
+
+        # 優先度リストにない残りのカラムも追加
+        for col in all_columns:
+            if col not in display_columns:
+                display_columns.append(col)
+
+        # カラム数が多すぎる場合は主要なカラムのみに制限
+        if len(display_columns) > 8:
+            display_columns = display_columns[:8]
+
+        # カラム名の日本語化マッピング
+        column_labels = {
+            "event_name": "イベント名",
+            "date_time": "日時",
+            "location": "開催場所",
+            "description": "説明",
+            "cost": "費用",
+            "registration_required": "事前登録",
+            "source_url": "URL",
+            "capacity": "定員",
+            "contact_info": "連絡先",
+            "target_audience": "対象者",
+            "additional_info": "追加情報",
+        }
+
+        # ヘッダー行
+        headers = [column_labels.get(col, col) for col in display_columns]
+        header_line = "| " + " | ".join(headers) + " |"
+        separator_line = "|" + "|".join([" --- " for _ in headers]) + "|"
+
+        # データ行
+        data_lines = []
+        for result in results:
+            row_values = []
+            for col in display_columns:
+                value = result.get(col, "")
+
+                # 値の整形
+                if value is None or value == "":
+                    row_values.append("-")
+                elif col == "source_url" and value:
+                    # URLは短縮して表示（リンクとして）
+                    row_values.append(f"[リンク]({value})")
+                elif col == "registration_required":
+                    # 事前登録の表示を簡潔に
+                    row_values.append("要" if value == "True" else "不要")
+                elif isinstance(value, str) and len(value) > 50:
+                    # 長いテキストは省略
+                    row_values.append(value[:47] + "...")
+                elif isinstance(value, str) and ("\n" in value or "|" in value):
+                    # 改行やパイプ文字を含む場合は置換
+                    value = value.replace("\n", " ").replace("|", "\\|")
+                    if len(value) > 50:
+                        value = value[:47] + "..."
+                    row_values.append(value)
+                else:
+                    row_values.append(str(value))
+
+            data_line = "| " + " | ".join(row_values) + " |"
+            data_lines.append(data_line)
+
+        # テーブル全体を結合
+        table_lines = [header_line, separator_line] + data_lines
+        return "\n".join(table_lines)

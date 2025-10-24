@@ -41,6 +41,11 @@ class StoreSearchTool(BaseTool):
 - クエリにLIMIT句がない場合、自動的に LIMIT 10 が追加されます
 - LIMIT句を指定する場合も、10以下に制限されます
 
+【出力形式】
+- 検索結果は、生データ（results）と表形式のMarkdown（table）の両方で返されます
+- 複数店舗を提案する際は、tableフィールドの内容をそのままユーザーに表示してください
+- 表形式では主要な情報（店舗名、カテゴリ、説明、営業時間、電話番号、住所、URL等）が見やすく整理されています
+
 【データスキーマ】
 テーブル名: stores.csv
 
@@ -115,7 +120,7 @@ class StoreSearchTool(BaseTool):
             sql_query (str): 実行するSQLクエリ（SELECT文のみ）
 
         Returns:
-            検索結果の辞書（results: 結果リスト, count: 件数）
+            検索結果の辞書（results: 結果リスト, count: 件数, table: 表形式のMarkdown）
             エラー時は {"error": "エラーメッセージ"}
         """
         sql_query = kwargs.get("sql_query", "")
@@ -150,7 +155,10 @@ class StoreSearchTool(BaseTool):
             # URL情報を追加
             results_with_urls = self._add_store_urls(results)
 
-            return {"results": results_with_urls, "count": len(results_with_urls)}
+            return {
+                "results": results_with_urls,
+                "count": len(results_with_urls),
+            }
 
         except Exception as e:
             error_msg = f"クエリ実行中にエラーが発生しました: {str(e)}"
@@ -307,3 +315,92 @@ class StoreSearchTool(BaseTool):
             logger.warning(f"Failed to add store URLs: {str(e)}")
             # URL追加に失敗しても元の結果を返す
             return results
+
+    def _generate_table_markdown(self, results: list[dict[str, Any]]) -> str:
+        """検索結果から表形式のMarkdownテーブルを生成する。
+
+        Args:
+            results: 店舗検索結果のリスト
+
+        Returns:
+            表形式のMarkdownテーブル文字列
+        """
+        if not results:
+            return ""
+
+        # 表示する主要カラムを定義（優先度順）
+        priority_columns = [
+            "store_name",
+            "category",
+            "description",
+            "opening_hours",
+            "phone",
+            "address",
+            "web_url",
+        ]
+
+        # 実際に存在するカラムのみを使用
+        all_columns = list(results[0].keys())
+        display_columns = [col for col in priority_columns if col in all_columns]
+
+        # 優先度リストにない残りのカラムも追加（store_idは除外）
+        for col in all_columns:
+            if col not in display_columns and col != "store_id":
+                display_columns.append(col)
+
+        # カラム数が多すぎる場合は主要なカラムのみに制限
+        if len(display_columns) > 8:
+            display_columns = display_columns[:8]
+
+        # カラム名の日本語化マッピング
+        column_labels = {
+            "store_name": "店舗名",
+            "category": "カテゴリ",
+            "description": "説明",
+            "opening_hours": "営業時間",
+            "phone": "電話番号",
+            "address": "住所",
+            "web_url": "URL",
+            "email": "メール",
+            "parking": "駐車場",
+            "pets_allowed": "ペット可",
+            "private_room": "個室",
+            "target_audience": "対象客層",
+        }
+
+        # ヘッダー行
+        headers = [column_labels.get(col, col) for col in display_columns]
+        header_line = "| " + " | ".join(headers) + " |"
+        separator_line = "|" + "|".join([" --- " for _ in headers]) + "|"
+
+        # データ行
+        data_lines = []
+        for result in results:
+            row_values = []
+            for col in display_columns:
+                value = result.get(col, "")
+
+                # 値の整形
+                if value is None or value == "":
+                    row_values.append("-")
+                elif col == "web_url" and value:
+                    # URLは短縮して表示（リンクとして）
+                    row_values.append(f"[リンク]({value})")
+                elif isinstance(value, str) and len(value) > 50:
+                    # 長いテキストは省略
+                    row_values.append(value[:47] + "...")
+                elif isinstance(value, str) and ("\n" in value or "|" in value):
+                    # 改行やパイプ文字を含む場合は置換
+                    value = value.replace("\n", " ").replace("|", "\\|")
+                    if len(value) > 50:
+                        value = value[:47] + "..."
+                    row_values.append(value)
+                else:
+                    row_values.append(str(value))
+
+            data_line = "| " + " | ".join(row_values) + " |"
+            data_lines.append(data_line)
+
+        # テーブル全体を結合
+        table_lines = [header_line, separator_line] + data_lines
+        return "\n".join(table_lines)

@@ -29,6 +29,61 @@ def _format_message_content(content: str) -> str:
     # 特定のパターンで改行を強制的に追加
     import re
 
+    # Markdownテーブルが含まれている場合は、フォーマット処理を最小限にする
+    has_table = "|" in content and content.count("|") >= 6
+    if has_table:
+        # テーブルを含む場合は、テーブル部分だけそのまま返す
+        # シンプルな処理: 過度なフォーマットを避ける
+        return content
+
+    # Markdownテーブルと丸囲み数字リストを検出して保護する
+    table_placeholders: dict[str, str] = {}
+    circled_placeholders: dict[str, str] = {}
+
+    # テーブル検出: より確実なパターン（複数行の|記号を含む行を検出）
+    # パイプで始まりパイプで終わる行が連続している部分を全て保護
+    lines = content.split("\n")
+    in_table = False
+    table_lines: list[str] = []
+    processed_lines: list[str] = []
+
+    for line in lines:
+        # テーブル行の判定: |で始まり|で終わる、または |---| のような区切り行
+        is_table_line = bool(re.match(r"^\s*\|.*\|\s*$", line))
+
+        if is_table_line:
+            if not in_table:
+                in_table = True
+                table_lines = []
+            table_lines.append(line)
+        else:
+            if in_table and table_lines:
+                # テーブル終了：プレースホルダーに置換
+                placeholder = f"__TABLE_PLACEHOLDER_{len(table_placeholders)}__"
+                table_placeholders[placeholder] = "\n".join(table_lines)
+                processed_lines.append(placeholder)
+                table_lines = []
+                in_table = False
+            processed_lines.append(line)
+
+    # 最後にテーブルが残っている場合
+    if in_table and table_lines:
+        placeholder = f"__TABLE_PLACEHOLDER_{len(table_placeholders)}__"
+        table_placeholders[placeholder] = "\n".join(table_lines)
+        processed_lines.append(placeholder)
+
+    content = "\n".join(processed_lines)
+
+    # 丸囲み数字リストを保護（①②③形式）- 行単位で保護
+    circled_pattern = r"^([①②③④⑤⑥⑦⑧⑨⑩].*)$"
+
+    def protect_circled(match):
+        placeholder = f"__CIRCLED_NUMBER_{len(circled_placeholders)}__"
+        circled_placeholders[placeholder] = match.group(1)
+        return placeholder
+
+    content = re.sub(circled_pattern, protect_circled, content, flags=re.MULTILINE)
+
     # 1. 句点の後で文章が続く場合に改行を追加（感嘆符や疑問符では改行しない）
     # 過度な改行を防ぐため、句点のみに限定
     content = re.sub(r"([。])([^\n\s])", r"\1\n\n\2", content)
@@ -235,7 +290,15 @@ def _format_message_content(content: str) -> str:
             continue  # 連続する空行をスキップ
         result_lines.append(line)
 
-    return "\n".join(result_lines)
+    result = "\n".join(result_lines)
+
+    # 保護したテーブルと丸囲み数字を復元
+    for placeholder, table in table_placeholders.items():
+        result = result.replace(placeholder, table)
+    for placeholder, cn in circled_placeholders.items():
+        result = result.replace(placeholder, cn)
+
+    return result
 
 
 def render_tool_execution(tool_execution: ToolExecution) -> None:
