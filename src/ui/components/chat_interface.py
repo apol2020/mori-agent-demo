@@ -29,6 +29,10 @@ def _format_message_content(content: str) -> str:
     # 特定のパターンで改行を強制的に追加
     import re
 
+    # 丸囲み数字（①②③）の前に改行がない場合は、強制的に改行を挿入
+    # パターン: 改行なしで丸囲み数字が続く場合（例: "よ！①店舗A" → "よ！\n\n①店舗A"）
+    content = re.sub(r"([^\n])([①②③④⑤⑥⑦⑧⑨⑩])", r"\1\n\n\2", content)
+
     # Markdownテーブルが含まれている場合は、フォーマット処理を最小限にする
     has_table = "|" in content and content.count("|") >= 6
     if has_table:
