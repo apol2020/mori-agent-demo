@@ -142,3 +142,10 @@ login_cofig/user_info.csv
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Git backup files
+*.bundle
+
+
+# Git backup files
+*.bundle
