@@ -34,6 +34,9 @@ def main() -> None:
         cookie_expiry_days=config["cookie"]["expiry_days"],
     )
 
+    # ログイン画面のタイトル
+    st.title("Welcome to PoC AI Agent")
+
     # UI - ログイン処理
     authenticator.login()
 
